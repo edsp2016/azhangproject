@@ -1,0 +1,443 @@
+---
+title: "$NYC in 48h; #LA in 48h"
+output: html_document
+---
+From an economics development perspective NYC's comparative advantage is the Arts rather than finance. I wonder what is the most and least attractive things of NYC from the perspective of the mass, and how about LA another city that is famous for its art and culture industry. I decide to explore this idea by analyzing data from Twitter. By sharing and commenting tweets, Twitter creates a platform for collective experience and a way for urban dewellers to document their interactions with the city.
+
+This research would help urban planners and social policy decision makers to identify the most and least attractive things of NYC and LA and make better policies to help develop the most attractive things and improve the least attractive things.
+
+I collected Tweets which contain hashtags #NYC and #LA for 48 hours.
+I categorized tweets to positive, neutral and negative. For each city, I divided tweets into inside of the city tweets not inside of the city. I used unsupervised learning and found the topics of the  positive and negative, inside and outside tweets for each city.
+
+I'd also like to see the relationship between topics and each other (need some suggestions on techniques),  the correlation between tweet topics and likes or retweets. 
+
+I'll make a short animation depicting the change of frequncy of #nyc, and #la over time. I'll make animations depicting the number of positive, negative, inside outside tweets for each city. I'll look into specific topics and make graphs depicting its change over time.
+
+I'll also make frequency maps for #nyc and #la. I'll make frequncy maps for other specific topics. 
+
+```{r}
+# library(ROAuth)
+# requestURL <- "https://api.twitter.com/oauth/request_token"
+# accessURL <- "https://api.twitter.com/oauth/access_token"
+# authURL <- "https://api.twitter.com/oauth/authorize"
+# consumerKey <- "XXXXXXXXXXXX"
+# consumerSecret <- "XXXXXXX"
+# my_oauth <- OAuthFactory$new(consumerKey=consumerKey,
+# consumerSecret=consumerSecret, requestURL=requestURL,
+# accessURL=accessURL, authURL=authURL)
+# my_oauth$handshake(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))
+# library(streamR)
+# load("my_oauth")
+# 
+# test1=filterStream(file.name="", track="#nyc",timeout=172800, oauth=my_oauth)
+# tweets_nyc<- parseTweets(test1)
+# write.csv(tweets_nyc, file= "tweets_nyc0.csv")
+ny=read.csv("tweets_nyc0.csv")
+
+# test2a=filterStream(file.name="", track="#la",timeout=172800, oauth=my_oauth)
+# tweets_la2<- parseTweets(test2a)
+# write.csv(tweets_la2, file = "tweets_la1.csv")
+la=read.csv("tweets_la1.csv")
+```
+
+defining function assign each tweet positive and negative scores by  matching tweets with positive and negative words database and count the number of positive and negative words and subtract them from each other. If the score is positive then it has more positive words than negative words, which is defined as a positive tweets. 
+```{r}
+hu.liu.pos=read.table("http://www.idiap.ch/~apbelis/hlt-course/positive-words.txt",skip=35)
+pos.words=unlist(hu.liu.pos)
+hu.liu.neg=read.table("http://www.idiap.ch/~apbelis/hlt-course/negative-words.txt",skip=35)
+neg.words=unlist(hu.liu.neg)
+score.sentiment = function(sentences, pos.words, neg.words, .progress='none')
+{
+require(plyr)
+require(stringr)
+
+# we got a vector of sentences. plyr will handle a list
+# or a vector as an "l" for us
+# we want a simple array of scores back, so we use
+# "l" + "a" + "ply" = "laply":
+scores = laply(sentences, function(sentence, pos.words, neg.words) {
+
+# clean up sentences with R's regex-driven global substitute, gsub():
+sentence = gsub('[[:punct:]]', '', sentence)
+sentence = gsub('[[:cntrl:]]', '', sentence)
+sentence = gsub('\\d+', '', sentence)
+# and convert to lower case:
+sentence = tolower(sentence)
+
+# split into words. str_split is in the stringr package
+word.list = str_split(sentence, '\\s+')
+# sometimes a list() is one level of hierarchy too much
+words = unlist(word.list)
+
+# compare our words to the dictionaries of positive & negative terms
+pos.matches = match(words, pos.words)
+neg.matches = match(words, neg.words)
+
+# match() returns the position of the matched term or NA
+# we just want a TRUE/FALSE:
+pos.matches = !is.na(pos.matches)
+neg.matches = !is.na(neg.matches)
+
+# and conveniently enough, TRUE/FALSE will be treated as 1/0 by sum():
+score = sum(pos.matches) - sum(neg.matches)
+
+return(score)
+}, pos.words, neg.words, .progress=.progress )
+
+scores.df = data.frame(score=scores)
+return(scores.df)
+}
+
+```
+(code from http://www.inside-r.org/howto/mining-twitter-airline-consumer-sentiment)
+
+#nyc
+subsetting nyc data to make it easier to handle
+```{r}
+require(mosaic)
+nyc_small=select(ny,text, retweet_count,favorited,truncated,created_at,lang,listed_count,verified,location,description,geo_enabled, user_created_at, statuses_count,followers_count,favourites_count,name,time_zone,user_lang,friends_count,screen_name,country,place_type,place_name,place_lat,place_lon,lat,lon)
+nyc_tweets=select(nyc_small,text, retweet_count,favorited,truncated,created_at,lang,listed_count,verified,location,description,geo_enabled)
+nyc_tweets_en=filter(nyc_tweets, lang=="en")
+```
+
+
+deleting non-English tweets and URLs.
+```{r}
+for(x in nyc_tweets_en$text){
+  Encoding(x)="latin1"
+  iconv(x,sub="")
+  gsub(" ?(f|ht)tp(s?)://(.*)[.][a-z]+", "", x)
+}
+```
+
+nyc pos and neg score
+```{r}
+nyc_tweets_en$pos.neg.sc = score.sentiment(nyc_tweets_en$text,pos.words, neg.words)
+
+require(dplyr)
+nyc_tweets_en_pos=subset(nyc_tweets_en, pos.neg.sc$score>0)
+nyc_tweets_en_neg=subset(nyc_tweets_en, pos.neg.sc$score<0)
+nyc_tweets_en_neutral=subset(nyc_tweets_en, pos.neg.sc$score==0)
+```
+
+topic analysis for all nyc tweets
+```{r}
+require(tm)
+library(topicmodels)
+nycstopwords=c(stopwords("english"),"nyc","newyork","newyorkcity",  "http","https","httpst","httpstc","httpstco","htt")
+corpusfunction=function(x,y){
+  corpus <- VCorpus(VectorSource(x)) # convert to corpus object
+  corpus <- tm_map(corpus, content_transformer(tolower)) # to lowercase
+  corpus <- tm_map(corpus, removePunctuation) # remove punctuation
+  corpus <- tm_map(corpus, removeNumbers) # remove digits
+  corpus <- tm_map(corpus, removeWords, y) # remove stopwords
+# construct DTM only with words 3+ characters long that appears 10+ times
+  dtm <- DocumentTermMatrix(corpus, control=list(minWordLength=3, bounds=list(10, Inf)))
+  return (dtm)
+}
+dtm.ny.all=corpusfunction(nyc_tweets_en$text,nycstopwords)
+
+# estimate LDA with K topics
+K <- 10
+#lda.ny.all <- LDA(dtm.ny.all, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+#terms.ny.all <- get_terms(lda.ny.all, 10)
+#terms.ny.all
+```
+(code adapted from https://github.com/pablobarbera/data-science-workshop/blob/master/text/04_machine_learning.Rmd)
+
+topic analysis for positive nyc tweets
+```{r}
+dtm.ny.pos=corpusfunction(nyc_tweets_en_pos$text,nycstopwords)
+
+# estimate LDA with K topics
+#K <- 20
+lda.ny.pos <- LDA(dtm.ny.pos, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.ny.pos <- get_terms(lda.ny.pos, 10)
+terms.ny.pos
+```
+
+topic analysis for negative nyc tweets
+```{r}
+dtm.ny.neg=corpusfunction(nyc_tweets_en_neg$text,nycstopwords)
+
+# estimate LDA with K topics
+#K <- 20
+lda.ny.neg <- LDA(dtm.ny.neg, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.ny.neg <- get_terms(lda.ny.neg, 10)
+terms.ny.neg
+```
+
+subsetting nyc tweets into inside NYC tweets and outside of NYC tweets. 
+```{r}
+for(x in nyc_tweets_en$location){
+  Encoding(x)="latin1"
+  iconv(x,sub="")
+  gsub(" ?(f|ht)tp(s?)://(.*)[.][a-z]+", "", x)
+  x=tolower(x)
+}
+
+test1=grep("new york", ignore.case=TRUE, nyc_tweets_en$location)
+test2=grep("nyc", ignore.case=TRUE, nyc_tweets_en$location)
+test3=grep("newyorkcity", ignore.case=TRUE, nyc_tweets_en$location)
+test4=grep("newyork", ignore.case=TRUE, nyc_tweets_en$location)
+nycmatch=c(test1,test2,test3,test4)
+nyc_tweets_en_in=nyc_tweets_en[nycmatch,]
+nyc_tweets_en_out=nyc_tweets_en[-nycmatch,]
+
+nyc_tweets_en_in_pos=subset(nyc_tweets_en_in, pos.neg.sc$score>0)
+nyc_tweets_en_in_neg=subset(nyc_tweets_en_in, pos.neg.sc$score<0)
+nyc_tweets_en_in_neutral= subset(nyc_tweets_en_in, pos.neg.sc$score==0)
+
+nyc_tweets_en_out_pos=subset(nyc_tweets_en_out, pos.neg.sc$score>0)
+nyc_tweets_en_out_neg=subset(nyc_tweets_en_out, pos.neg.sc$score<0)
+nyc_tweets_en_out_neutral=subset(nyc_tweets_en_out, pos.neg.sc$score==0)
+```
+
+compotuting some summary statistics for NYC
+```{r}
+#proportion of pos in tweets/in twees
+3371/12177
+#proportion of neg in tweets/in twees
+1755/12177
+
+#proportion of pos in tweets/out twees
+14167/55729
+#proportion of neg in tweets/out twees
+15158/55729
+
+#proportion of pos/all(en)
+17531/67879
+#proporiton of in/all(en)
+12177/67879
+```
+
+topic analysis for all nyc tweets that are tweeted in NYC
+```{r}
+dtm.ny.in=corpusfunction(nyc_tweets_en_in$text,nycstopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.ny.in <- LDA(dtm.ny.in, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.ny.in <- get_terms(lda.ny.in, 10)
+terms.ny.in
+```
+
+topic analysis for positive tweets that is tweeted in nyc
+```{r}
+dtm.ny.in.pos=corpusfunction(nyc_tweets_en_in_pos$text,nycstopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.ny.in.pos <- LDA(dtm.ny.in.pos, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.ny.in.pos <- get_terms(lda.ny.in.pos, 10)
+terms.ny.in.pos
+
+dtm.ny.in.pos=corpusfunction(nyc_tweets_en_in$text,nycstopwords)
+# estimate LDA with K topics
+```
+
+topic analysis for negative tweets that is tweeted in nyc. 
+```{r}
+dtm.ny.in.neg=corpusfunction(nyc_tweets_en_in_neg$text,nycstopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.ny.in.neg <- LDA(dtm.ny.in.neg, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.ny.in.neg <- get_terms(lda.ny.in.neg, 10)
+terms.ny.in.neg
+```
+
+topic analysis for all tweets about NYC that is not tweeted in NYC
+```{r}
+#dtm.ny.out=corpusfunction(nyc_tweets_en_out$text,nycstopwords)
+# estimate LDA with K topics
+#K <- 20
+#lda.ny.out <- LDA(dtm.ny.out, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+#terms.ny.out <- get_terms(lda.ny.out, 10)
+#terms.ny.out
+```
+
+topic analysis for positive tweets about NYC that is not tweeted in NYC
+```{r}
+dtm.ny.out.pos=corpusfunction(nyc_tweets_en_out_pos$text,nycstopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.ny.out.pos <- LDA(dtm.ny.out.pos, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.ny.out.pos <- get_terms(lda.ny.out.pos, 10)
+terms.ny.out.pos
+```
+
+topic analysis for negative tweets about NYC that is not tweeted in NYC
+```{r}
+dtm.ny.out.neg=corpusfunction(nyc_tweets_en_out_neg$text,nycstopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.ny.out.neg <- LDA(dtm.ny.out.neg, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.ny.out.neg <- get_terms(lda.ny.out.neg, 10)
+terms.ny.out.neg
+```
+
+#LA
+cleaning la data
+```{r}
+require(mosaic)
+la_small=select(la,text, retweet_count,favorited,truncated,created_at,lang,listed_count,verified,location,description,geo_enabled, user_created_at, statuses_count,followers_count,favourites_count,name,time_zone,user_lang,friends_count,screen_name,country,place_type,place_name,place_lat,place_lon,lat,lon)
+la_tweets_en=select(la_small,text, retweet_count,favorited,truncated,created_at,lang,listed_count,verified,location,description,geo_enabled)
+```
+
+
+deleting non english tweets and urls
+```{r}
+for(x in la_tweets_en$text){
+  Encoding(x)="latin1"
+  iconv(x,sub="")
+  gsub(" ?(f|ht)tp(s?)://(.*)[.][a-z]+", "", x)
+}
+
+```
+
+computing positive and negative scores for LA tweets. 
+```{r}
+
+la_tweets_en$pos.neg.sc = score.sentiment(la_tweets_en$text, pos.words, neg.words)
+la_tweets_en_pos=subset(la_tweets_en, pos.neg.sc$score>0)
+la_tweets_en_neg=subset(la_tweets_en, pos.neg.sc$score<0)
+la_tweets_en_neutral=subset(la_tweets_en, pos.neg.sc$score==0)
+```
+
+topic analysis for all la tweets
+```{r}
+lastopwords=c(stopwords("english"),"la","los","angeles", "losangeles",  "http","https","httpst","httpstc","httpstco","htt")
+#dtm.la.all=corpusfunction(la_tweets_en$text,lastopwords)
+# estimate LDA with K topics
+#K <- 20
+#lda.la.all <- LDA(dtm.la.all, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+#terms.la.all <- get_terms(lda.la.all, 10)
+#terms.la.all
+```
+
+topic analysis for positive tweets about LA
+```{r}
+dtm.la.pos=corpusfunction(la_tweets_en_pos$text,lastopwords)
+
+# estimate LDA with K topics
+#K <- 20
+lda.la.pos <- LDA(dtm.la.pos, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.la.pos <- get_terms(lda.la.pos, 10)
+terms.la.pos
+```
+
+topic analysis for negative tweets about LA
+```{r}
+dtm.la.neg=corpusfunction(la_tweets_en_neg$text,lastopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.la.neg <- LDA(dtm.la.neg, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.la.neg <- get_terms(lda.la.neg, 10)
+terms.la.neg
+```
+
+
+subsetting tweets about LA into tweeted in LA and not tweeted in LA
+```{r}
+for(x in la_tweets_en$location){
+  Encoding(x)="latin1"
+  iconv(x,sub="")
+  gsub(" ?(f|ht)tp(s?)://(.*)[.][a-z]+", "", x)
+  x=tolower(x)
+}
+
+test1.la=grep("la", ignore.case=TRUE, la_tweets_en$location)
+test2.la=grep("losangeles", ignore.case=TRUE, la_tweets_en$location)
+test3.la=grep("los angeles", ignore.case=TRUE, la_tweets_en$location)
+lamatch=c(test1.la,test2.la,test3.la)
+la_tweets_en_in=la_tweets_en[lamatch,]
+la_tweets_en_out=la_tweets_en[-lamatch,]
+
+la_tweets_en_in_pos=subset(la_tweets_en_in, pos.neg.sc$score>0)
+la_tweets_en_in_neg=subset(la_tweets_en_in, pos.neg.sc$score<0)
+la_tweets_en_in_neutral= subset(la_tweets_en_in, pos.neg.sc$score==0)
+
+la_tweets_en_out_pos=subset(la_tweets_en_out, pos.neg.sc$score>0)
+la_tweets_en_out_neg=subset(la_tweets_en_out, pos.neg.sc$score<0)
+la_tweets_en_out_neutral=subset(la_tweets_en_out, pos.neg.sc$score==0)
+```
+
+computing some proportions for tweets about LA
+```{r}
+#proportion of pos in tweets/in twees
+972/4087
+#proportion of neg in tweets/in twees
+420/4087
+
+#proportion of pos in tweets/out twees
+3632/13753
+#proportion of neg in tweets/out twees
+1538/13753
+
+#proportion of pos/all(en)
+4593/17816
+#proporiton of in/all(en)
+4087/17816
+```
+
+topic analysis for all tweets about LA that is tweeted in LA
+```{r}
+# dtm.la.in=corpusfunction(la_tweets_en_in$text,lastopwords)
+# # estimate LDA with K topics
+# #K <- 20
+# lda.la.in <- LDA(dtm.la.in, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+# terms.la.in <- get_terms(lda.la.in, 10)
+# terms.la.in
+```
+
+topic analysis for all positive tweets about LA that is tweeted in LA
+```{r}
+dtm.la.in.pos=corpusfunction(la_tweets_en_in_pos$text,lastopwords)
+estimate LDA with K topics
+K <- 20
+lda.la.in.pos <- LDA(dtm.la.in.pos, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.ny.la.pos <- get_terms(lda.la.in.pos, 10)
+terms.ny.la.pos
+
+```
+
+topic analysis for negative tweets about LA that is tweeted in LA
+```{r}
+dtm.la.in.neg=corpusfunction(la_tweets_en_in_neg$text,nycstopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.la.in.neg <- LDA(dtm.la.in.neg, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.la.in.neg <- get_terms(lda.la.in.neg, 10)
+terms.la.in.neg
+```
+
+topic analysis for all tweets about LA that is not tweeted in LA
+```{r}
+dtm.la.out=corpusfunction(la_tweets_en_out$text,lastopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.la.out <- LDA(dtm.la.out, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.la.out <- get_terms(lda.la.out, 10)
+terms.la.out
+```
+
+topic analysis for all positive tweets about LA but is not tweeted in LA
+```{r}
+dtm.la.out.pos=corpusfunction(la_tweets_en_out_pos$text,nycstopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.la.out.pos <- LDA(dtm.la.out.pos, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.la.out.pos <- get_terms(lda.la.out.pos, 10)
+terms.la.out.pos
+```
+
+topic analysis for all negative tweets about LA that is not tweeted in LA
+```{r}
+dtm.la.out.neg=corpusfunction(la_tweets_en_out_neg$text,lastopwords)
+# estimate LDA with K topics
+#K <- 20
+lda.la.out.neg <- LDA(dtm.la.out.neg, k = K, method = "Gibbs", control = list(verbose=25L, seed = 123, burnin = 100, iter = 100))
+terms.la.out.neg <- get_terms(lda.la.out.neg, 10)
+terms.la.out.neg
+```
+
+
+

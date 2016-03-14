@@ -32,16 +32,19 @@ incrementComp <- function(composer_stats, c, season){
 
   
 composerBySeason <- data.frame()
-for (seas in 1:30) {
+for (seas in 1:xmlSize(rootnode)) {
+  # DEBUG: cat(seas, "\n")
   firstlist <- xmlToList(rootnode[[seas]])
   season <- firstlist$season
   season <- paste("Season",season,sep=".")
   works <- firstlist$worksInfo
-  for (i in 1:length(works)) {
-    if (!is.null(works[[i]]$composerName)) {
-      composerBySeason <- incrementComp(composerBySeason, works[[i]]$composerName,season)
+  if (is.list(works)) {     # sometimes works is actually empty
+      for (i in 1:length(works)) {
+        if (!is.null(works[[i]]$composerName)) {    #sometimes there is no composer
+          composerBySeason <- incrementComp(composerBySeason, works[[i]]$composerName,season)
+        }
+      }
     }
-  }
 }
 
 

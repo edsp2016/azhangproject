@@ -1,0 +1,51 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+require("XML")
+s1842<- "https://raw.githubusercontent.com/nyphilarchive/PerformanceHistory/master/Programs/1842-43_TO_1910-11.xml"
+s1842=getURL(s1842)
+s1842 <- xmlParse(s1842)
+rootnode = xmlRoot(s1842) #gives content of root
+
+incrementComp <- function(composer_stats, c, season){
+  if (is.null(composer_stats[c, season])) {
+    composer_stats[c, season] <- 1
+  } else if (is.na(composer_stats[c,season])) {
+    composer_stats[c, season] <- 1
+  } else {
+    composer_stats[c, season] <- composer_stats[c, season] + 1
+  }
+  return(composer_stats)
+}
+
+
+composerBySeason <- data.frame()
+for (seas in 1:1015){
+  firstlist <- xmlToList(rootnode[[seas]])
+  season <- firstlist$season
+  season <- paste("Season",season,sep=".")
+  works <- firstlist$worksInfo
+  for (i in 1:length(works)) {
+    if (!is.null(works[[i]]$composerName)) {
+      composerBySeason <- incrementComp(composerBySeason, works[[i]]$composerName,season)
+    }
+  }
+}
+
+```
+
+
+```{r}
+library(rvest)
+url <- 'http://www.classical.net/music/composer/dates/comp7.php'
+html <- read_html(url)
+tables <- html_table(html, fill=TRUE)
+length(tables)
+
+file=read_html("http://www.classical.net/music/composer/dates/comp7.php")
+html_nodes(file,xpath="//*[@id="center"]/div[1]")
+```
+

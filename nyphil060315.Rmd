@@ -1,0 +1,79 @@
+---
+title: "Reflection on NY Phil -- How NYC Rise to the center of the Arts from the turn of the century"
+output: html_document
+---
+During the turn of the century, New York becomes the center of the arts. At the same time important art institues like MoMA and NY Phil emerge and evelop quikly which not only encourages American artists' works to flourish but also attract artists from all over the world to NYC. In this research, I would like to study the performance history of NY Phil and visualize the popularity score of each category changes and how the nationality diversity changes
+
+1.I would like to compute popularity scores for each composer, conductor, soloist, and solo instrument by computing the number of each composer, conductor, soloist, and solo instrument over the total number of performance of each season. I will first find the top items in each category, and then make interactive plots for each composer, conductor, soloist, and intrument's polularity score over time, and see if their trend changes corresponds to some specific historical incidence. 
+
+These interactive graphs will be helpful to explore the rise of stardom and individuality. Some times concerts feature a theme and some concerts feature specific living performer. Especially as the rise of social media in recent years, specific performers more and more become the selling point of a concert. It is interesting to see how did they reach to their stardom over their performing history. I would like to seperate data into concerts featuring single soloist, and other performance and see the top items for each categories and compute the popularity score and graph the changes. 
+
+2. One way that reflects NY is the center of the arts is it attracts talented artists all over the world. I would like to focus on composers and pianists since many composers have been past away when their works are performed in NY Phil and piano is the most popular solo instrument. I would also like to merge the NY phil data with conductor nationality data and ny phil data with pianist nationality data to see if the nationality diversity increase over the time as NY Phil and NYC becoming more attractive to world renowned artists.
+
+
+
+
+```{r}
+require("XML")
+require(RCurl)
+s<- "https://raw.githubusercontent.com/nyphilarchive/PerformanceHistory/master/Programs/complete.xml"
+s=getURL(s)
+s <- xmlParse(s)
+rootnode = xmlRoot(s) #gives content of root
+
+incrementComp <- function(composer_stats, c, season){
+  if (is.null(composer_stats[c, season])) {
+    composer_stats[c, season] <- 1
+  } else if (is.na(composer_stats[c,season])) {
+    composer_stats[c, season] <- 1
+  } else {
+    composer_stats[c, season] <- composer_stats[c, season] + 1
+  }
+  return(composer_stats)
+}
+
+composerBySeasonComplete <- data.frame()
+for (seas in 1:xmlSize(rootnode)) {
+  # DEBUG: cat(seas, "\n")
+  firstlist <- xmlToList(rootnode[[seas]])
+  season <- firstlist$season
+  season <- paste("Season",season,sep=".")
+  works <- firstlist$worksInfo
+  if (is.list(works)) {     # sometimes works is actually empty
+      for (i in 1:length(works)) {
+        if (!is.null(works[[i]]$composerName)) {    #sometimes there is no composer
+          composerBySeasonComplete <- incrementComp(composerBySeasonComplete, works[[i]]$composerName,season)
+        }
+      }
+    }
+}
+
+write.csv(composerBySeasonCOmplete,"composerBySeasonComplete.csv")
+
+require(plyr)
+test=join(composerBySeason1842,composerBySeason1911,type="full")
+test=cbind(composerBySeason1842,composerBySeason1911)[match(ronames(composerBySeason1842),rownames(composerBySeason1911))]
+test=merge(composerBySeason1842,composerBySeason1911,by="row.names",all=TRUE)
+
+composerBySeason[is.na(composerBySeason)] <- 0
+require(base)
+totalNumConcert=colSums(composerBySeason,na.rm=TRUE)
+for ( i in 1:248){
+  popScoreComposer[i,]=composerBySeason[i,]/totalNumConcert
+  i=i+1
+}
+
+```
+
+
+```{r}
+library(rvest)
+url <- 'http://www.classical.net/music/composer/dates/comp7.php'
+html <- read_html(url)
+tables <- html_table(html, fill=TRUE)
+length(tables)
+
+file=read_html("http://www.classical.net/music/composer/dates/comp7.php")
+html_nodes(file,xpath="//*[@id="center"]/div[1]")
+```
+

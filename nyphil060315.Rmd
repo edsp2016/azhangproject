@@ -65,6 +65,7 @@ for ( i in 1:dim(composerBySeasonComplete)[1]){
   popScoreComposerComplete[i,]=composerBySeasonComplete[i,]/totalNumConcert
   i=i+1
 }
+write.csv(popScoreComposerComplete,"popScoreComposerComplete.csv")
 ```
 
 2. computing the popularity score for pianist
@@ -75,7 +76,9 @@ for (seas in 1:xmlSize(rootnode)) {
   firstlist <- xmlToList(rootnode[[seas]])
   season <- firstlist$season
   season <- paste("Season",season,sep=".")
-  works <- firstlist$soloist
+  works <- firstlist$worksInfo
+  works = works$works
+  works = works$soloists
   if (is.list(works)) {     # sometimes works is actually empty
       for (i in 1:length(works)) {
         if (!is.null(works[[i]]$soloistName) && (works[[i]]$soloistInstrument=="Piano")) {    #sometimes there is no composer

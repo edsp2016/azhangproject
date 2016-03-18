@@ -69,42 +69,26 @@ for ( i in 1:dim(composerBySeasonComplete)[1]){
 
 2. computing the popularity score for pianist
 ```{r}
-incrementComp <- function(pianist_stats, c, season){
-  if (is.null(pianist_stats[c, season])) {
-    composer_stats[c, season] <- 1
-  } else if (is.na(composer_stats[c,season])) {
-    composer_stats[c, season] <- 1
-  } else {
-    composer_stats[c, season] <- composer_stats[c, season] + 1
-  }
-  return(composer_stats)
-}
-
-BySeasonComplete <- data.frame()
+soloistBySeasonComplete <- data.frame()
 for (seas in 1:xmlSize(rootnode)) {
   # DEBUG: cat(seas, "\n")
   firstlist <- xmlToList(rootnode[[seas]])
   season <- firstlist$season
   season <- paste("Season",season,sep=".")
-  works <- firstlist$worksInfo
+  works <- firstlist$soloist
   if (is.list(works)) {     # sometimes works is actually empty
       for (i in 1:length(works)) {
-        if (!is.null(works[[i]]$composerName)) {    #sometimes there is no composer
-          composerBySeasonComplete <- incrementComp(composerBySeasonComplete, works[[i]]$composerName,season)
+        if (!is.null(works[[i]]$soloistName) && (works[[i]]$soloistInstrument=="Piano")) {    #sometimes there is no composer
+          soloistBySeasonComplete <- incrementComp(soloistBySeasonComplete, works[[i]]$soloistName,season)
         }
       }
     }
 }
 ```
 
+3.woman composers
 ```{r}
-library(rvest)
-url <- 'http://www.classical.net/music/composer/dates/comp7.php'
-html <- read_html(url)
-tables <- html_table(html, fill=TRUE)
-length(tables)
-
-file=read_html("http://www.classical.net/music/composer/dates/comp7.php")
-html_nodes(file,xpath="//*[@id="center"]/div[1]")
+womancomp=unlist(womancomposers)
+if womancomp %in% 
 ```
 

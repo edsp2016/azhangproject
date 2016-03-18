@@ -6,19 +6,20 @@ During the turn of the century, New York City becomes the center of the arts. At
 
 First of all, I would like to see the change of diversity over time. Because the number of performance increase over the years, I want to compute the popularity score for each conductor, composer, etc. by dividing the number of conductor, composers, etc. by the number of total performance of the year. As NYC rise to the center of art and culture, I expect American composers'popularity score will rise, female composers' popularity score will rise, and living composers' popularity score will rise. I will try to prove these hypothesis right or wrong with data. I will get the nationality, gender, and born time data from scraping other websites like wikipedia. 
 
-As classical music becoming commercialized over time (and in fact in the turn of the century concert pianists are like rock stars nowadays,) NY Phil's performance history data is also a way to study the rise of stardorm. There are some concerts featuring soloists, and there are concerts featuring a theme and fit the soloist into the work. I would like to see how the popularity score for each of these two kinds of concerts change over time. I am also interested in finding the top ten soloists appeared in concerts featuring only one soloist, and top ten composers played by concerts featuring one soloist, and top ten pieaces featuring one soloist. 
+As classical music becoming commercialized over time, NY Phil's performance history data is also a way to study the rise of stardorm. There are some concerts featuring soloists, and there are concerts featuring a theme and fit the soloist into the work. I would like to see how the popularity score for each of these two kinds of concerts change over time. I am also interested in finding the top ten soloists appeared in concerts featuring only one soloist, and top ten composers played by concerts featuring one soloist, and top ten pieaces featuring one soloist. 
 
 to do:
 xml file in R
-1. compute popularity score for each composer
+1. compute popularity score for each composer (checked)
 2. compute popularity score for each pianist
 3. popularity score for soloists for concerts featuring one soloist.
 
 scraping:
 1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality
-2.female composer 
-3.american composer with born year
+2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year (strip "u", strip unused items, edit names)
+3.american composer with born year https://en.wikipedia.org/wiki/List_of_American_composers
 
+visualization example: http://woojink.com/moma/
 
 1. computing the popularity score for composers
 ```{r}

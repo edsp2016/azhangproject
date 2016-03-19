@@ -1,28 +1,29 @@
 ---
-title: "Reflection on NY Phil -- How NYC Rise to the center of the Arts"
+title: "Reflection on NY Phil ¨C The NY Phil as a lens on changes in classical music culture"
 output: html_document
 ---
-During the turn of the century, New York City becomes the center of the arts. At the same time important art institutes like MoMA and NY Phil emerge and develop quikly which not only encourage American artists' works to flourish but also attract artists from all over the world to NYC. In this research, I would like to see how the diversity in NY Phil performance history over time, and how individual soloist arise to stardom through studying NY Phil performance history.
+Around the turn of the century, New York City became the arts center of the world. A major factor was the establishment and expansion of the New York Philharmonic which not only encouraged the flourishing of American musicians but also attracted musicians from all over the world to NYC. In this research, I would like to study the performance history of the New York Philharmonic, analyze and visualize the changes of diversity in composers and the form of stardom in performers over time.  
 
-First of all, I would like to see the change of diversity over time. Because the number of performance increase over the years, I want to compute the popularity score for each conductor, composer, etc. by dividing the number of conductor, composers, etc. by the number of total performance of the year. As NYC rise to the center of art and culture, I expect American composers'popularity score will rise, female composers' popularity score will rise, and living composers' popularity score will rise. I will try to prove these hypothesis right or wrong with data. I will get the nationality, gender, and born time data from scraping other websites like wikipedia. 
+I would first like to study changes in diversity in composers over time using factors like repertoire, composer, performer and their origins. Originally, these were very limited but with time the music increased in diversity as the number of performances increased. Therefore, I want to compute a popularity score to even out the increase of numbers of performances. I want to see with the rise of NYC as the center of art and culture, will there be a change from the strongly Euro-centric, older(deceased), male composers. I will get nationality, gender, birth year data by scraping websites like Wikipedia.  
 
-As classical music becoming commercialized over time, NY Phil's performance history data is also a way to study the rise of stardorm. There are some concerts featuring soloists, and there are concerts featuring a theme and fit the soloist into the work. I would like to see how the popularity score for each of these two kinds of concerts change over time. I am also interested in finding the top ten soloists appeared in concerts featuring only one soloist, and top ten composers played by concerts featuring one soloist, and top ten pieaces featuring one soloist. 
+As classical music became commercialized over time with broadcast and the rise of the recording industry, film scores, etc., solo performers rose to prominence. I would like to measure this trend using the NY Phil¡¯s concert history data. There are some concerts featuring soloists, and there are concerts featuring a theme and fit the soloist into the work. I would like to see how the popularity score for each of these two kinds of concerts change over time. In addition, I¡¯m curious to know the top ten soloists appeared in concerts featuring single soloist, and top ten composers played by concerts featuring one soloist, and top ten pieces featuring one soloist. 
+
 
 to do:
 xml file in R
-1. compute popularity score for each composer (checked)
-2. compute popularity score for each pianist
+1. compute popularity score for each composer (pop score ?)
+2. compute popularity score for each pianist ??
 3. popularity score for soloists for concerts featuring one soloist.
 
 scraping:
-1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality
-2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year (strip "u", strip unused items, edit names)
+1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality (into a table ??)
+2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year (strip "u", strip unused items, edit names ?)
 3.american composer with born year https://en.wikipedia.org/wiki/List_of_American_composers
 
 visualization example: http://woojink.com/moma/
 
 1. computing the popularity score for composers
-```{r}
+```{r,eval=FALSE}
 require("XML")
 require(RCurl)
 xmlfile <- xmlParse("complete.xml")
@@ -54,22 +55,63 @@ for (seas in 1:xmlSize(rootnode)) {
       }
     }
 }
-
+colnames(composerBySeasonComplete)[1]="composers"
 write.csv(composerBySeasonComplete, "composerBySeasonComplete.csv")
+```
 
-composerBySeasonComplete[is.na(composerBySeasonComplete)] <- 0
+```{r, eval=FALSE}
 require(base)
+composerBySeasonComplete[is.na(composerBySeasonComplete)] <- 0
+composerBySeasonComplete1=composerBySeasonComplete[2:175]
+composerBySeasonComplete2=composerBySeasonComplete[1]
 popScoreComposerComplete=data.frame()
-totalNumConcert=colSums(composerBySeasonComplete, na.rm=TRUE)
-for ( i in 1:dim(composerBySeasonComplete)[1]){
-  popScoreComposerComplete[i,]=composerBySeasonComplete[i,]/totalNumConcert
+totalNumConcert=colSums(composerBySeasonComplete1, na.rm=TRUE)
+for ( i in 1:2652){
+  popScoreComposerComplete[i,]=as.numeric(composerBySeasonComplete1[i,])/totalNumConcert
   i=i+1
 }
+popScoreComposerComplete=cbind(composerBySeasonComplete2,popScoreComposerComplete)
 write.csv(popScoreComposerComplete,"popScoreComposerComplete.csv")
 ```
 
-2. computing the popularity score for pianist
+top ten popular composers
 ```{r}
+popScoreComposerComplete=read.csv("popScoreComposerComplete.csv")
+popScoreSumComp=rowSums(popScoreComposerComplete[2:175],na.rm=TRUE)
+popScoreSumComp=cbind(popScoreComposerComplete[1],popScoreSumComp)
+popScoreSumComp1=popScoreSumComp[order(-popScoreSumComp$popScoreSumComp),]
+head(popScoreSumComp1,10)
+```
+
+graphing composers'popularity scores over time
+```{r,eval=FALSE}
+
+test=popScoreComposerComplete[5,]
+test=test[2:175]
+test=unlist(test)
+par(mar = rep(1,4))
+plot(test)
+title(main="Mozart")
+
+
+test=popScoreComposerComplete[14,]
+test=test[2:175]
+test=unlist(test)
+par(mar = rep(1,4))
+plot(test)
+title(main="Heyden")
+
+test=popScoreComposerComplete[1349,]
+test=test[2:175]
+test=unlist(test)
+par(mar = rep(1,4))
+plot(test)
+title(main="Messiaen")
+```
+
+
+2. computing the popularity score for pianist
+```{r,eval=FALSE}
 soloistBySeasonComplete <- data.frame()
 for (seas in 1:xmlSize(rootnode)) {
   # DEBUG: cat(seas, "\n")
@@ -90,8 +132,11 @@ for (seas in 1:xmlSize(rootnode)) {
 ```
 
 3.woman composers
-```{r}
+```{r, eval=FALSE}
+
 womancomp=unlist(womancomposers)
-if womancomp %in% 
+test0=data.frame()
+if womancomp %in% popScoreComposerComplete$composers:
+  test0[i,]=1
 ```
 

@@ -75,7 +75,7 @@ write.csv(popScoreComposerComplete,"popScoreComposerComplete.csv")
 ```
 
 top ten popular composers
-```{r}
+```{r,eval=FALSE}
 popScoreComposerComplete=read.csv("popScoreComposerComplete.csv")
 popScoreSumComp=rowSums(popScoreComposerComplete[2:175],na.rm=TRUE)
 popScoreSumComp=cbind(popScoreComposerComplete[1],popScoreSumComp)
@@ -135,8 +135,6 @@ for (seas in 1:xmlSize(rootnode)) {
 ```{r, eval=FALSE}
 
 womancomp=unlist(womancomposers)
-test0=data.frame()
-if womancomp %in% popScoreComposerComplete$composers:
-  test0[i,]=1
+which(womancomp %in% popScoreComposerComplete$composers)
 ```
 

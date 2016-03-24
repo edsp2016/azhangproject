@@ -11,22 +11,23 @@ As classical music became commercialized over time with broadcast and the rise o
 
 to do:
 xml file in R
-1. compute popularity score for each composer (pop score ?)
+1. compute popularity score for each composer: https://raw.githubusercontent.com/nyphilarchive/PerformanceHistory/master/Programs/complete.xml
 2. compute popularity score for each pianist ??
 3. popularity score for soloists for concerts featuring one soloist.
 
 scraping:
 1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality (into a table ??)
-2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year (strip "u", strip unused items, edit names ?)
+2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year (match?)
 3.american composer with born year https://en.wikipedia.org/wiki/List_of_American_composers
 
 visualization example: http://woojink.com/moma/
 
 1. computing the popularity score for composers
-```{r,eval=FALSE}
+```{r, eval=FALSE}
 require("XML")
-require(RCurl)
-xmlfile <- xmlParse("complete.xml")
+#require(RCurl)
+#xmlfile <- xmlParse("complete.xml")
+xmlfile <- xmlParse("~/GitHub/azhangproject/complete.xml")
 rootnode = xmlRoot(xmlfile) #gives content of root
 
 incrementComp <- function(composer_stats, c, season){
@@ -39,6 +40,9 @@ incrementComp <- function(composer_stats, c, season){
   }
   return(composer_stats)
 }
+
+composerBySeasonComplete <- read.csv("~/GitHub/azhangproject/composerBySeasonComplete.csv", row.names=1)
+
 
 composerBySeasonComplete <- data.frame()
 for (seas in 1:xmlSize(rootnode)) {
@@ -56,7 +60,8 @@ for (seas in 1:xmlSize(rootnode)) {
     }
 }
 colnames(composerBySeasonComplete)[1]="composers"
-write.csv(composerBySeasonComplete, "composerBySeasonComplete.csv")
+#write.csv(composerBySeasonComplete, "composerBySeasonComplete.csv")
+
 ```
 
 ```{r, eval=FALSE}
@@ -67,7 +72,7 @@ composerBySeasonComplete2=composerBySeasonComplete[1]
 popScoreComposerComplete=data.frame()
 totalNumConcert=colSums(composerBySeasonComplete1, na.rm=TRUE)
 for ( i in 1:2652){
-  popScoreComposerComplete[i,]=as.numeric(composerBySeasonComplete1[i,])/totalNumConcert
+  popScoreComposerComplete[i,]=composerBySeasonComplete1[i,]/totalNumConcert
   i=i+1
 }
 popScoreComposerComplete=cbind(composerBySeasonComplete2,popScoreComposerComplete)
@@ -76,37 +81,26 @@ write.csv(popScoreComposerComplete,"popScoreComposerComplete.csv")
 
 top ten popular composers
 ```{r,eval=FALSE}
-popScoreComposerComplete=read.csv("popScoreComposerComplete.csv")
 popScoreSumComp=rowSums(popScoreComposerComplete[2:175],na.rm=TRUE)
 popScoreSumComp=cbind(popScoreComposerComplete[1],popScoreSumComp)
 popScoreSumComp1=popScoreSumComp[order(-popScoreSumComp$popScoreSumComp),]
-head(popScoreSumComp1,10)
+test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(popScoreSumComp1,20)
 ```
 
 graphing composers'popularity scores over time
 ```{r,eval=FALSE}
 
-test=popScoreComposerComplete[5,]
+test=popScoreComposerComplete[1,]
 test=test[2:175]
 test=unlist(test)
 par(mar = rep(1,4))
-plot(test)
-title(main="Mozart")
 
-
-test=popScoreComposerComplete[14,]
-test=test[2:175]
-test=unlist(test)
-par(mar = rep(1,4))
-plot(test)
-title(main="Heyden")
-
-test=popScoreComposerComplete[1349,]
-test=test[2:175]
-test=unlist(test)
-par(mar = rep(1,4))
-plot(test)
-title(main="Messiaen")
+require(ggplot2)
+points(test,y=NULL)
+plot(as.double(popScoreComposerComplete[1,2:ncol(popScoreComposerComplete)]), type = "l")
+require(ggplot2)
+qplot(seq_along(as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)])),as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)]))+geom_line()+ylim(0,1)+geom_area(colour="black")
 ```
 
 
@@ -118,23 +112,55 @@ for (seas in 1:xmlSize(rootnode)) {
   firstlist <- xmlToList(rootnode[[seas]])
   season <- firstlist$season
   season <- paste("Season",season,sep=".")
-  works <- firstlist$worksInfo
-  works = works$works
-  works = works$soloists
-  if (is.list(works)) {     # sometimes works is actually empty
-      for (i in 1:length(works)) {
-        if (!is.null(works[[i]]$soloistName) && (works[[i]]$soloistInstrument=="Piano")) {    #sometimes there is no composer
-          soloistBySeasonComplete <- incrementComp(soloistBySeasonComplete, works[[i]]$soloistName,season)
+  worksInfo <- firstlist$worksInfo
+  if (!is.list(worksInfo)) next
+  #if ((is.null(worksInfo)) || is.na(worksInfo)) next
+  works = worksInfo$work
+  if (is.list(works)) {  # sometimes works is actually empty
+  soloists = works$soloists
+  if (!is.list(soloist)) next
+  soloist=soloists$soloist
+  if (!is.list(soloist)) next
+      for (i in 1:length(soloist)) {
+        if (!is.null(soloist[i]$soloistName) && !is.null(soloist[i]$soloistInstrument) && !is.na(soloist[i]$soloistInstrument) && (soloist[i]$soloistInstrument=="Piano")) {    #sometimes there is no composer
+          soloistBySeasonComplete <- incrementComp(soloistBySeasonComplete, soloist[i]$soloistName,season)
         }
       }
     }
 }
+write.csv(soloistBySeasonComplete,"soloistBySeasonComplete.csv")
 ```
 
 3.woman composers
-```{r, eval=FALSE}
 
-womancomp=unlist(womancomposers)
-which(womancomp %in% popScoreComposerComplete$composers)
+```{r, eval=FALSE}
+womancomposers <- read.csv("womancomposers.csv", header = FALSE, quote = "'")
+womenAsChar <- character(ncol(womancomposers))
+for (i in 1:ncol(womancomposers)) {
+  womanString <- as.character(womancomposers[1,i])
+  if (substr(womanString, 1, 1) == " ") womanString <- substr(womanString, 2, nchar(womanString))
+  if (substr(womanString, 1, 1) == "u") womanString <- substr(womanString, 2, nchar(womanString))
+  womenAsChar[i] <- womanString # as.character(womancomposers[1,i])
+}
+
+test=which(womenAsChar %in% popScoreComposerComplete$composers=="TRUE")
+
+t=rep(0,length(womenAsChar))
+for ( i in 1:length(womenAsChar)){
+  if (length(grep(womenAsChar[i], popScoreComposerComplete$composers)!=0)){
+    t[i]=grep(womenAsChar[i], popScoreComposerComplete$composers)
+  }
+}
+
+womancom=popScoreComposerComplete[test,]
+womancomoScore=colSums(womancom[2:175])
+plot(womancomoScore, type = "l")
+
+malecom=popScoreComposerComplete[-test,]
+malecomoScore=colSums(malecom[2:175])
+plot(malecomoScore, type = "l")
+
+require(ggplot2)
+qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(colour="black")
 ```
 

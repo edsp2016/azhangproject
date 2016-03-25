@@ -101,6 +101,7 @@ points(test,y=NULL)
 plot(as.double(popScoreComposerComplete[1,2:ncol(popScoreComposerComplete)]), type = "l")
 require(ggplot2)
 qplot(seq_along(as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)])),as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)]))+geom_line()+ylim(0,1)+geom_area(colour="black")
+
 ```
 
 
@@ -143,12 +144,15 @@ for (i in 1:ncol(womancomposers)) {
   womenAsChar[i] <- womanString # as.character(womancomposers[1,i])
 }
 
-test=which(womenAsChar %in% popScoreComposerComplete$composers=="TRUE")
 
 t=rep(0,length(womenAsChar))
 for ( i in 1:length(womenAsChar)){
-  if (length(grep(womenAsChar[i], popScoreComposerComplete$composers)!=0)){
-    t[i]=grep(womenAsChar[i], popScoreComposerComplete$composers)
+  if (length(grep(womenAsChar[i], popScoreComposerComplete$composers)==0)){
+      t[i]=0
+  }else if (length(grep(womenAsChar[i], popScoreComposerComplete$composers)==1)) {
+      t[i]=grep(womenAsChar[i], popScoreComposerComplete$composers)
+  }else if (length(grep(womenAsChar[i], popScoreComposerComplete$composers)>1)){
+      t[i]=as.single(grep(womenAsChar[i], popScoreComposerComplete$composers))
   }
 }
 
@@ -162,5 +166,9 @@ plot(malecomoScore, type = "l")
 
 require(ggplot2)
 qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(colour="black")
+```
+composers
+```{r}
+composers <- read.csv("composers.csv", header = FALSE, quote = ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,", encoding = "UTF-8")
 ```
 

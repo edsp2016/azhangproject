@@ -1,0 +1,146 @@
+---
+title: "Reflection on NY Phil ¨C The NY Phil as a lens on changes in classical music culture"
+output: html_document
+---
+Around the turn of the century, New York City became the arts center of the world. A major factor was the establishment and expansion of the New York Philharmonic which not only encouraged the flourishing of American musicians but also attracted musicians from all over the world to NYC. In this research, I would like to study the performance history of the New York Philharmonic, analyze and visualize the changes of diversity in composers and the form of stardom in performers over time.  
+
+I would first like to study changes in diversity in composers over time using factors like repertoire, composer, performer and their origins. Originally, these were very limited but with time the music increased in diversity as the number of performances increased. Therefore, I want to compute a popularity score to even out the increase of numbers of performances. I want to see with the rise of NYC as the center of art and culture, will there be a change from the strongly Euro-centric, older(deceased), male composers. I will get nationality, gender, birth year data by scraping websites like Wikipedia.  
+
+
+
+to do:
+scraping:
+1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality (into a table )
+2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year
+3.composer with born year https https://en.wikipedia.org/wiki/List_of_21st-century_classical_composers
+
+
+1. I computed the popularity scores for each composer in each season. I first read the XML file and found the number of every composers in all season and put them in a table. I then sumed up the total number of performance in each seaon. I got the popularity score by dividing the number of performance for each composers in each season by the total number of performance in each season. 
+```{r, eval=FALSE}
+require("XML")
+#require(RCurl)
+#xmlfile <- xmlParse("complete.xml")
+xmlfile <- xmlParse("~/GitHub/azhangproject/complete.xml")
+rootnode = xmlRoot(xmlfile) #gives content of root
+
+incrementComp <- function(composer_stats, c, season){
+  if (is.null(composer_stats[c, season])) {
+    composer_stats[c, season] <- 1
+  } else if (is.na(composer_stats[c,season])) {
+    composer_stats[c, season] <- 1
+  } else {
+    composer_stats[c, season] <- composer_stats[c, season] + 1
+  }
+  return(composer_stats)
+}
+
+composerBySeasonComplete <- data.frame()
+for (seas in 1:xmlSize(rootnode)) {
+  # DEBUG: cat(seas, "\n")
+  firstlist <- xmlToList(rootnode[[seas]])
+  season <- firstlist$season
+  season <- paste("Season",season,sep=".")
+  works <- firstlist$worksInfo
+  if (is.list(works)) {     # sometimes works is actually empty
+      for (i in 1:length(works)) {
+        if (!is.null(works[[i]]$composerName)) {    #sometimes there is no composer
+          composerBySeasonComplete <- incrementComp(composerBySeasonComplete, works[[i]]$composerName,season)
+        }
+      }
+    }
+}
+colnames(composerBySeasonComplete)[1]="composers"
+#write.csv(composerBySeasonComplete, "composerBySeasonComplete.csv")
+```
+
+the cleaned data look like:
+```{r}
+composerBySeasonComplete <- read.csv("~/GitHub/azhangproject/composerBySeasonComplete.csv", row.names=1)
+composerBySeasonComplete[1:5,1:5]
+```
+
+the popularity score table
+```{r,eval=FALSE}
+require(base)
+composerBySeasonComplete[is.na(composerBySeasonComplete)] <- 0
+composerBySeasonComplete1=composerBySeasonComplete[2:175]
+composerBySeasonComplete2=composerBySeasonComplete[1]
+popScoreComposerComplete=data.frame()
+totalNumConcert=colSums(composerBySeasonComplete1, na.rm=TRUE)
+for ( i in 1:2652){
+  popScoreComposerComplete[i,]=composerBySeasonComplete1[i,]/totalNumConcert
+  i=i+1
+}
+popScoreComposerComplete=cbind(composerBySeasonComplete2,popScoreComposerComplete)
+#write.csv(popScoreComposerComplete,"popScoreComposerComplete.csv")
+```
+
+```{r}
+popScoreComposerComplete <- read.csv("~/GitHub/azhangproject/popScoreComposerComplete.csv", row.names=1)
+popScoreComposerComplete[1:5,1:5]
+```
+
+top ten popular composers
+```{r}
+popScoreSumComp=rowSums(popScoreComposerComplete[2:175],na.rm=TRUE)
+popScoreSumComp=cbind(popScoreComposerComplete[1],popScoreSumComp)
+popScoreSumComp1=popScoreSumComp[order(-popScoreSumComp$popScoreSumComp),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(popScoreSumComp1,20)
+```
+
+graphing specific composers'popularity scores over time.  
+```{r}
+# test=popScoreComposerComplete[1,]
+# test=test[2:175]
+# test=unlist(test)
+# par(mar = rep(1,4))
+#require(ggplot2)
+#points(test,y=NULL)
+#plot(as.double(popScoreComposerComplete[1,2:ncol(popScoreComposerComplete)]), type = "l")
+require(ggplot2)
+qplot(seq_along(as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)])),as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)]))+geom_line()+ylim(0,1)+geom_area(colour="black")
+```
+
+2.woman composers:
+I scraped wikipedia page on a list of women composers (https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year) in python and read it in R. I matched the name of women composers with the composers in the popularity score table and computed the proportion of women composers's works performed in each season and graphed it. 
+```{r}
+library(png)
+library(grid)
+img01 <- readPNG("2016-03-26.png")
+grid.raster(img01)
+```
+
+```{r}
+womancomposers <- read.csv("womancomposers.csv", header = FALSE, quote = "'")
+womenAsChar <- character(ncol(womancomposers))
+for (i in 1:ncol(womancomposers)) {
+  womanString <- as.character(womancomposers[1,i])
+  if (substr(womanString, 1, 1) == " ") womanString <- substr(womanString, 2, nchar(womanString))
+  if (substr(womanString, 1, 1) == "u") womanString <- substr(womanString, 2, nchar(womanString))
+  womenAsChar[i] <- womanString # as.character(womancomposers[1,i])
+}
+
+l=c()
+for ( i in 1:length(womenAsChar)){
+  l=c(l,which(womenAsChar[i]==popScoreComposerComplete$composers))
+}
+
+womancom=popScoreComposerComplete[l,]
+womancomoScore=colSums(womancom[2:175])
+plot(womancomoScore, type = "l")
+
+malecom=popScoreComposerComplete[-l,]
+malecomoScore=colSums(malecom[2:175])
+plot(malecomoScore, type = "l")
+
+require(ggplot2)
+qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(colour="black")
+```
+
+3. composers nationalities
+```{r}
+img02 <- readPNG("2016-03-26b.png")
+grid.raster(img02)
+```
+

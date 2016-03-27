@@ -6,21 +6,14 @@ Around the turn of the century, New York City became the arts center of the worl
 
 I would first like to study changes in diversity in composers over time using factors like repertoire, composer, performer and their origins. Originally, these were very limited but with time the music increased in diversity as the number of performances increased. Therefore, I want to compute a popularity score to even out the increase of numbers of performances. I want to see with the rise of NYC as the center of art and culture, will there be a change from the strongly Euro-centric, older(deceased), male composers. I will get nationality, gender, birth year data by scraping websites like Wikipedia.  
 
-As classical music became commercialized over time with broadcast and the rise of the recording industry, film scores, etc., solo performers rose to prominence. I would like to measure this trend using the NY Phil¡¯s concert history data. There are some concerts featuring soloists, and there are concerts featuring a theme and fit the soloist into the work. I would like to see how the popularity score for each of these two kinds of concerts change over time. In addition, I¡¯m curious to know the top ten soloists appeared in concerts featuring single soloist, and top ten composers played by concerts featuring one soloist, and top ten pieces featuring one soloist. 
 
 
 to do:
-xml file in R
-1. compute popularity score for each composer: https://raw.githubusercontent.com/nyphilarchive/PerformanceHistory/master/Programs/complete.xml
-2. compute popularity score for each pianist ??
-3. popularity score for soloists for concerts featuring one soloist.
-
 scraping:
-1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality (into a table ??)
-2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year (match?)
-3.american composer with born year https://en.wikipedia.org/wiki/List_of_American_composers
+1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality (into a table )
+2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year
+3.composer with born year https
 
-visualization example: http://woojink.com/moma/
 
 1. computing the popularity score for composers
 ```{r, eval=FALSE}
@@ -104,35 +97,7 @@ qplot(seq_along(as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerCo
 
 ```
 
-
-2. computing the popularity score for pianist
-```{r,eval=FALSE}
-soloistBySeasonComplete <- data.frame()
-for (seas in 1:xmlSize(rootnode)) {
-  # DEBUG: cat(seas, "\n")
-  firstlist <- xmlToList(rootnode[[seas]])
-  season <- firstlist$season
-  season <- paste("Season",season,sep=".")
-  worksInfo <- firstlist$worksInfo
-  if (!is.list(worksInfo)) next
-  #if ((is.null(worksInfo)) || is.na(worksInfo)) next
-  works = worksInfo$work
-  if (is.list(works)) {  # sometimes works is actually empty
-  soloists = works$soloists
-  if (!is.list(soloist)) next
-  soloist=soloists$soloist
-  if (!is.list(soloist)) next
-      for (i in 1:length(soloist)) {
-        if (!is.null(soloist[i]$soloistName) && !is.null(soloist[i]$soloistInstrument) && !is.na(soloist[i]$soloistInstrument) && (soloist[i]$soloistInstrument=="Piano")) {    #sometimes there is no composer
-          soloistBySeasonComplete <- incrementComp(soloistBySeasonComplete, soloist[i]$soloistName,season)
-        }
-      }
-    }
-}
-write.csv(soloistBySeasonComplete,"soloistBySeasonComplete.csv")
-```
-
-3.woman composers
+2.woman composers
 
 ```{r, eval=FALSE}
 womancomposers <- read.csv("womancomposers.csv", header = FALSE, quote = "'")
@@ -144,31 +109,33 @@ for (i in 1:ncol(womancomposers)) {
   womenAsChar[i] <- womanString # as.character(womancomposers[1,i])
 }
 
-
-t=rep(0,length(womenAsChar))
+l=c()
 for ( i in 1:length(womenAsChar)){
-  if (length(grep(womenAsChar[i], popScoreComposerComplete$composers)==0)){
-      t[i]=0
-  }else if (length(grep(womenAsChar[i], popScoreComposerComplete$composers)==1)) {
-      t[i]=grep(womenAsChar[i], popScoreComposerComplete$composers)
-  }else if (length(grep(womenAsChar[i], popScoreComposerComplete$composers)>1)){
-      t[i]=as.single(grep(womenAsChar[i], popScoreComposerComplete$composers))
-  }
+  l=c(l,which(womenAsChar[i]==popScoreComposerComplete$composers))
 }
 
-womancom=popScoreComposerComplete[test,]
+womancomposers1 <- read.csv("womancomposers2.csv", header = FALSE)
+womenAsChar1 <- womancomposers1[,1]
+l=c()
+for ( i in 1:length(womenAsChar)){
+  l=c(l,which(womancomposers1[i]==popScoreComposerComplete$composers))
+}
+
+womancom=popScoreComposerComplete[l,]
 womancomoScore=colSums(womancom[2:175])
 plot(womancomoScore, type = "l")
 
-malecom=popScoreComposerComplete[-test,]
+malecom=popScoreComposerComplete[-l,]
 malecomoScore=colSums(malecom[2:175])
 plot(malecomoScore, type = "l")
 
 require(ggplot2)
 qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(colour="black")
 ```
-composers
+
+3. composers nationalities
 ```{r}
-composers <- read.csv("composers.csv", header = FALSE, quote = ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,", encoding = "UTF-8")
+composerse=readLines("composers.csv")
+composers <- read.delim("composers.csv", header = FALSE,sep=",", encoding = "UTF-8")
 ```
 

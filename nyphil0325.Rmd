@@ -6,8 +6,6 @@ Around the turn of the century, New York City became the arts center of the worl
 
 I would first like to study changes in diversity in composers over time using factors like repertoire, composer, performer and their origins. Originally, these were very limited but with time the music increased in diversity as the number of performances increased. Therefore, I want to compute a popularity score to even out the increase of numbers of performances. I want to see with the rise of NYC as the center of art and culture, will there be a change from the strongly Euro-centric, older(deceased), male composers. I will get nationality, gender, birth year data by scraping websites like Wikipedia.  
 
-
-
 to do:
 scraping:
 1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality (into a table )
@@ -142,5 +140,36 @@ qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(
 ```{r}
 img02 <- readPNG("2016-03-26b.png")
 grid.raster(img02)
+
+img03 <- readPNG("2016-03-27.png")
+grid.raster(img03)
+```
+
+```{r}
+american1=read.csv("americantest1.csv", header = FALSE ,encoding = "UTF-8")
+american2=read.csv("americantest2.csv", header = FALSE ,encoding = "UTF-8")
+american3=read.csv("americantest3.csv", header = FALSE ,encoding = "UTF-8")
+american4=read.csv("americantest4.csv", header = FALSE ,encoding = "UTF-8")
+american5=read.csv("americantest5.csv", header = FALSE ,encoding = "UTF-8")
+american6=read.csv("americantest6.csv", header = FALSE ,encoding = "UTF-8")
+american7=read.csv("americantest7.csv", header = FALSE ,encoding = "UTF-8")
+american=c(american1,american2,american3,american4,american5,american6,american7)
+american=unique(unlist(american))
+#american0 <- as.factor(american[,1])
+american1.0=gsub("\\(composer)|\\(pianist)|\\(conductor)|\\(guitarist)|\\(musician)|\\ (musicologist)|\\(singer-songwriter)|\\ (Fluxus musician)","",american)
+american1.1=strsplit(american1," ")
+
+l=c()
+for ( i in 1:length(american1.1)){
+  if(length(grep(american1.1[[i]][1],popScoreComposerComplete$composers))>0 && 
+     length(grep(american1.1[[i]][length(american1.1[[i]])],popScoreComposerComplete$composers))>0){
+    test=grep(american1.1[[i]][1],popScoreComposerComplete$composers)
+    l=c(l,test)
+     }
+  }
+l
+l
+americans=popScoreComposerComplete$composers[l]
+americans
 ```
 

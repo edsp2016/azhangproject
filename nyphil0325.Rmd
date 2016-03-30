@@ -73,6 +73,7 @@ popScoreComposerComplete=cbind(composerBySeasonComplete2,popScoreComposerComplet
 #write.csv(popScoreComposerComplete,"popScoreComposerComplete.csv")
 ```
 
+the popularity score table looks like:
 ```{r}
 popScoreComposerComplete <- read.csv("~/GitHub/azhangproject/popScoreComposerComplete.csv", row.names=1)
 popScoreComposerComplete[1:5,1:5]
@@ -137,14 +138,20 @@ qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(
 ```
 
 3. composers nationalities
+I got the most of the composers nationality scores by scraping this page: (https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality) using the following python code
 ```{r}
 img02 <- readPNG("2016-03-26b.png")
 grid.raster(img02)
+```
 
-img03 <- readPNG("2016-03-27.png")
+some pages, for example the American composer page (https://en.wikipedia.org/w/index.php?title=Category:American_classical_composers) has multiple pages, and it is hard to go through every page in my code. So I scraped every page by clicking by hand and rbind them together in R
+
+```{r}
+img03 <- readPNG("scrapeNationality2.png")
 grid.raster(img03)
 ```
 
+I stacked the data from multiple pages and cleaned it. 
 ```{r}
 american1=read.csv("americantest1.csv", header = FALSE ,encoding = "UTF-8")
 american2=read.csv("americantest2.csv", header = FALSE ,encoding = "UTF-8")
@@ -157,19 +164,107 @@ american=c(american1,american2,american3,american4,american5,american6,american7
 american=unique(unlist(american))
 #american0 <- as.factor(american[,1])
 american1.0=gsub("\\(composer)|\\(pianist)|\\(conductor)|\\(guitarist)|\\(musician)|\\ (musicologist)|\\(singer-songwriter)|\\ (Fluxus musician)","",american)
-american1.1=strsplit(american1," ")
+american1.1=strsplit(as.character(american1.0)," ")
 
-l=c()
+#matching method one. change the name format of american composer list into last name ",  " first name and exact match with pop score table
+american1.2=list(rep(0,length(american1.1)))
 for ( i in 1:length(american1.1)){
-  if(length(grep(american1.1[[i]][1],popScoreComposerComplete$composers))>0 && 
-     length(grep(american1.1[[i]][length(american1.1[[i]])],popScoreComposerComplete$composers))>0){
-    test=grep(american1.1[[i]][1],popScoreComposerComplete$composers)
-    l=c(l,test)
-     }
-  }
-l
-l
+  if (length(american1.1[[i]])>1)
+    american1.2[i]=paste(american1.1[[i]][length(american1.1[[i]])],american1.1[[i]][1],sep=",  ")
+}
+american1.2=american1.2[!is.na(american1.2)]
+l=list(rep(0, length(american1.2)))
+l=c()
+for ( i in 1:length(american1.2)){
+  l=c(l,which(american1.2[i]==popScoreComposerComplete$composers))
+}
 americans=popScoreComposerComplete$composers[l]
-americans
+americansPop=popScoreComposerComplete[l,]
+americansPopSum=colSums(americansPop[2:175])
+qplot(seq_along(americansPopSum),americansPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")
+
+#matching method 2. 
+# k=c()
+# test=american1.1=strsplit(as.character(american1.0)," ")
+# for ( i in 1:length(american1.1)){
+#   for ( j in 1:length(test)){
+#     if(length(which(american1.1[[i]][1]==test[[j]][length(test[[j]])]))>0 && 
+#      length(which(american1.1[[i]][length(test[[i]])]==test[[j]][1]))>0){
+#       k=c(k,i)
+#     }
+#   }
+# }
 ```
 
+top twenty american composers
+```{r}
+americanTop=rowSums(americansPop[2:175],na.rm=TRUE)
+americanTop=cbind(as.data.frame(americans)[1],americanTop)
+americanTop1=americanTop[order(-americanTop$americanTop),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(americanTop1,20)
+```
+
+3. Scraping composer birth and death year. 
+The web pages' structure for different time period is different. I scraped the classical era composer's birth and death year page (https://en.wikipedia.org/wiki/List_of_Classical-era_composers) in python with the following code.
+```{r}
+img04 <- readPNG("classicalCode.png")
+grid.raster(img04)
+```
+
+I use rvest to scrape the page for romantic era composers page(https://en.wikipedia.org/wiki/List_of_Romantic-era_composers), twentieth century composers' page(https://en.wikipedia.org/wiki/List_of_20th-century_classical_composers), and twenty first century composers' page (https://en.wikipedia.org/wiki/List_of_21st-century_classical_composers). 
+```{r,eval=FALSE}
+require(mosaic)
+library(rvest)
+url <- 'https://en.wikipedia.org/wiki/List_of_20th-century_classical_composers'
+html <- read_html(url, encoding = "UTF-8")
+tables <- html_table(html, fill=TRUE)
+tables=tables[[2]]
+tables=tables[1:3]
+for (i in 1:nrow(tables)){
+  test=unlist(strsplit(tables$Name[i],""))
+  n=(length(test)+1)/2
+  test1=test[1:n]
+  test2=do.call(paste, c(as.list(test1), sep=""))
+  tables$Name1[i]=test2
+}
+twentiethC=tables[2:4]
+
+#change variable names
+names(tables)[names(tables)=="Year of birth"] <- "birth"
+names(tables)[names(tables)=="Year of death"] <- "death"
+
+#substitute NAs with current year
+tables$death[is.na(tables$death)] <- 2016
+#find match. see if the composer appears in NY phil or not
+l=c()
+for (i in 1:(length(tables))){
+  l=c(l,which(tables$Name[i]==popScoreComposerComplete$composers))
+}
+#find the col number of the first non 0 value and get the year
+```
+
+```{r,eval=FALSE}
+url <- 'https://en.wikipedia.org/wiki/List_of_21st-century_classical_composers'
+html <- read_html(url, encoding = , encoding="UTF-8")
+tables <- html_table(html, fill=TRUE)
+tables=tables[[2]]
+tables=tables[1:3]
+write.csv(tables,"test0328.csv")
+tables=read.csv("test0328.csv", encoding="UTF-8")
+for (i in 1:nrow(tables)){
+  test=unlist(strsplit(tables$Name[i],""))
+  n=(length(test)+1)/2
+  test1=test[1:n]
+  test2=do.call(paste, c(as.list(test1), sep=""))
+  tables$Name1[i]=test2
+}
+twentyFirstC=tables[2:4]
+```
+
+to do:
+1. better matching algorithms for women composer list and nationality list with popularity score by first and last name rather than full name
+2. remove (composer) from the american list
+2. read non English letters in xml file and wiki list of composer file
+3. matching algorith for death year and pop score: year die>earliest work present season
+4. better graph

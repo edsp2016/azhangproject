@@ -2,15 +2,7 @@
 title: "Reflection on NY Phil ¨C The NY Phil as a lens on changes in classical music culture"
 output: html_document
 ---
-Around the turn of the century, New York City became the arts center of the world. A major factor was the establishment and expansion of the New York Philharmonic which not only encouraged the flourishing of American musicians but also attracted musicians from all over the world to NYC. In this research, I would like to study the performance history of the New York Philharmonic, analyze and visualize the changes of diversity in composers and the form of stardom in performers over time.  
-
-I would first like to study changes in diversity in composers over time using factors like repertoire, composer, performer and their origins. Originally, these were very limited but with time the music increased in diversity as the number of performances increased. Therefore, I want to compute a popularity score to even out the increase of numbers of performances. I want to see with the rise of NYC as the center of art and culture, will there be a change from the strongly Euro-centric, older(deceased), male composers. I will get nationality, gender, birth year data by scraping websites like Wikipedia.  
-
-to do:
-scraping:
-1.composer nationality: https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality (into a table )
-2.female composer https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year
-3.composer with born year https https://en.wikipedia.org/wiki/List_of_21st-century_classical_composers
+Around the turn of the century, New York City became the arts center of the world. A major factor was the establishment and expansion of the New York Philharmonic which not only encouraged the flourishing of American musicians but also attracted musicians from all over the world to NYC. The other factor was NY Phil not only performed the famous classical pieces that the audiences are already familiar of but also establisthed programs like composers in residency to perform and promote living composers'works. In this research, I would like to study the performance history of the New York Philharmonic, analyze and visualize the changes of diversity in composers. I want to see with the rise of NYC as the center of art and culture, will there be a change from the strongly Euro-centric, older(deceased), male composers. I will get nationality, gender, birth year data by scraping websites like Wikipedia.  
 
 
 1. I computed the popularity scores for each composer in each season. I first read the XML file and found the number of every composers in all season and put them in a table. I then sumed up the total number of performance in each seaon. I got the popularity score by dividing the number of performance for each composers in each season by the total number of performance in each season. 
@@ -55,6 +47,7 @@ the cleaned data look like:
 ```{r}
 composerBySeasonComplete <- read.csv("~/GitHub/azhangproject/composerBySeasonComplete.csv", row.names=1)
 composerBySeasonComplete[1:5,1:5]
+
 ```
 
 the popularity score table
@@ -75,8 +68,9 @@ popScoreComposerComplete=cbind(composerBySeasonComplete2,popScoreComposerComplet
 
 the popularity score table looks like:
 ```{r}
-popScoreComposerComplete <- read.csv("~/GitHub/azhangproject/popScoreComposerComplete.csv", row.names=1)
+popScoreComposerComplete <- read.csv("~/GitHub/azhangproject/popScoreComposerComplete.csv", row.names=1,encoding="UTF-8")
 popScoreComposerComplete[1:5,1:5]
+
 ```
 
 top ten popular composers

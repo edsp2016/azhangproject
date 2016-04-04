@@ -1,13 +1,14 @@
 ---
-title: "Reflection on NY Phil ¨C The NY Phil as a lens on changes in classical music culture"
+title: "Reflections on NY Phil ¨C The NY Phil as a lens on changes in US society"
 output: html_document
 ---
-Around the turn of the century, New York City became the arts center of the world. A major factor was the establishment and expansion of the New York Philharmonic which not only encouraged the flourishing of American musicians but also attracted musicians from all over the world to NYC. The other factor was NY Phil not only performed the famous classical pieces that the audiences are already familiar with but also establisthed programs like composers-in-residency to perform and promote living composers'works. In this research, I would like to study the performance history of the New York Philharmonic, analyze and visualize the changes of diversity in composers. I want to see with the rise of NYC as the center of art and culture, will there be a change from the strongly Euro-centric, older(deceased), male composers. 
+Around the turn of the century, New York City became the arts center of the world. Its establishment not only encouraged the flourishing of American musicians but also attracted musicians from all over the world to NYC. NY Philharmonic as an important art and culture institution, reflects the social and economic changes of the United States society over time. In this study I focus on NY Philharmonic data from three perspectives: 1. the contemporality and the economic change of the US; 2. the nationality of composers whose works are performed by NY Philharmonic in relation to the political enviroments of the US; 3. the rise of women composers over time
 
-#Getting data from NY Philharmonic's github page
+###1. Getting data from NY Philharmonic's github page
 First of all, I read the XML file from NY Philharmonic's github page (https://github.com/nyphilarchive/PerformanceHistory/blob/master/Programs/complete.xml) and found the number of every composers in all season and put them in a table. 
 ```{r, eval=FALSE}
 require("XML")
+require(mosaic)
 xmlfile <- xmlParse("complete.xml",encoding="UTF-8")
 rootnode = xmlRoot(xmlfile) #gives content of root
 
@@ -47,15 +48,16 @@ composerBySeasonComplete <- read.csv("composerBySeasonComplete.csv", row.names=1
 composerBySeasonComplete[1:5,1:5]
 ```
 
-To get a general sense of the data, I decide to ordern the composers by the number of works got performed from a descending order. 
+To get a general sense of the data, I decide to order composers by the number of works that got performed in descending order. 
 ```{r}
 SumComp=rowSums(composerBySeasonComplete[2:175],na.rm=TRUE)
 SumComp=cbind(composerBySeasonComplete[1],SumComp)
 SumComp1=SumComp[order(-SumComp$SumComp),]
 ```
 
-The following graph show that most of the composers works get performed less than ten times, and only 16 composers's works are performed more than 1000 times. Therefore, I expect the composers are very diversee. 
+The following graph shows that most of the composers' works got performed fewer than ten times, and only 16 composers' works are performed more than 1000 times. Therefore, I expect the composers are very diverse. 
 ```{r}
+require(mosaic)
 nrow(SumComp1)
 hist(SumComp1$SumComp)
 
@@ -68,8 +70,17 @@ nrow(compl1000)
 hist(compl1000$SumComp)
 ```
 
-#Computing popularity score
-Because the number of performance increase year by year, I decide to compute a popularity score to even the number out. I sumed up the total number of performance in each seaon. I got the popularity score by dividing the number of performance for each composers in each season by the total number of performance in each season.
+### 2.Computing popularity score
+
+Graph of number of performance per year
+```{r}
+SumSeas=colSums(composerBySeasonComplete[2:175],na.rm=TRUE)
+require(ggplot2)
+qplot(seq_along(as.double(SumSeas)),as.double(SumSeas))+geom_line()+scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+Because the number of performance change year by year, I computed a "popularity score" to normalize by total number of performances. I got the popularity score by dividing the number of performances for each composers in each season by the total number of performance in each season.
+
 ```{r,eval=FALSE}
 require(base)
 composerBySeasonComplete[is.na(composerBySeasonComplete)] <- 0
@@ -101,122 +112,20 @@ head(popScoreSumComp1,20)
 ```
 
 graphing specific composers'popularity scores over time.  
-```{r}
-require(ggplot2)
-qplot(seq_along(as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)])),as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)]))+geom_line()+ylim(0,1)+geom_area(colour="black")
+```{r, eval=FALSE}
+
+qplot(seq_along(as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)])),as.double(popScoreComposerComplete[770,2:ncol(popScoreComposerComplete)]))+geom_line()+ylim(0,1)+geom_area(colour="black") + scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
 ```
 
-#Scraping wikipedia and get a list of woman composers:
+# 3. The contemporaneousness of NY Philharmonic reportories and the change of US economy
+Even though NY Philharmonic is a classical music institution, it is still important for it to not only play established composers' works but also play contemporary composers' work. Especially, the composer in residence program at NY philharmonic shows that NY philharmonic is working on promoting living composers' works.  
 
-I would like to know if the proportion of woman composers of total composers' works that are performed by NY philharmonic increase of time, but NY Philharmonic's data does not have gender information for each composers. Therefore, I scraped wikipedia page on a list of women composers (https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year) in python. I matched the name of women composers with the composers names in the popularity score table and computed the proportion of women composers's works performed in each season and graphed it. 
+Only at economically stable and affluent times are people able to invest on music and art education. This will increase the number of contemporary composers. With the additional sources of new music we should see this reflected by a relative increase in the proportion of works by contemporary rather than deceased composers being performed. Therefore, we should look for relationships between US economic measurements like GDP and the proportion of contemporary works performed. 
+
+For this part, I am scraping wikipedia pages. The web pages' structures for different time periods are different. I scraped the classical era composer's birth and death year page (https://en.wikipedia.org/wiki/List_of_Classical-era_composers) in python with the following code.
 ```{r}
 library(png)
 library(grid)
-img01 <- readPNG("2016-03-26.png")
-grid.raster(img01)
-```
-
-```{r}
-womancomposers <- read.csv("womancomposers.csv", header = FALSE, quote = "'")
-womenAsChar <- character(ncol(womancomposers))
-for (i in 1:ncol(womancomposers)) {
-  womanString <- as.character(womancomposers[1,i])
-  if (substr(womanString, 1, 1) == " ") womanString <- substr(womanString, 2, nchar(womanString))
-  if (substr(womanString, 1, 1) == "u") womanString <- substr(womanString, 2, nchar(womanString))
-  womenAsChar[i] <- womanString # as.character(womancomposers[1,i])
-}
-
-l=c()
-for ( i in 1:length(womenAsChar)){
-  l=c(l,which(womenAsChar[i]==popScoreComposerComplete$composers))
-}
-
-womancom=popScoreComposerComplete[l,]
-womancomoScore=colSums(womancom[2:175])
-plot(womancomoScore, type = "l")
-
-malecom=popScoreComposerComplete[-l,]
-malecomoScore=colSums(malecom[2:175])
-plot(malecomoScore, type = "l")
-
-require(ggplot2)
-qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(colour="black")
-```
-The graph shows that there is not much increase of the proportion of women composers over the total number of composers whose works are performed by NY Philharmonic. However, that does not say women are not becoming more important in the field of classical music. In Baroque, classical and romantical era, most of the composers are male, and the rise of women composers start relatively recently. Therefore, next step is to see the proportion of the number of women composers whose works get performed by NY Philharmonic over the number of living composers whoser works get performed by NY Philharmonic. 
-
-# composers nationalities
-I would like to see the components of nationalitiese of composers whose works are performed by NY Philharmonic. The NY Philharmonic data does not have the nationality of composers. Therefore, I scraped wikipedia page and got a lists of composers nationalities data.
-I got the most of the composers nationality scores by scraping this page: (https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality) using the following python code
-```{r}
-img02 <- readPNG("2016-03-26b.png")
-grid.raster(img02)
-```
-
-However, some pages, for example the American composer page (https://en.wikipedia.org/w/index.php?title=Category:American_classical_composers) has multiple pages, and it is hard to go through every page in my code. So I scraped every page by clicking by hand and rbind them together in R
-
-```{r}
-img03 <- readPNG("scrapeNationality2.png")
-grid.raster(img03)
-```
-
-I stacked the data from multiple pages and cleaned with and matched them with the popularity score table and computed the proportion of American composers whose works are performed by the NY Philharmonic over total number of works over time.
-```{r}
-american1=read.csv("americantest1.csv", header = FALSE ,encoding = "UTF-8")
-american2=read.csv("americantest2.csv", header = FALSE ,encoding = "UTF-8")
-american3=read.csv("americantest3.csv", header = FALSE ,encoding = "UTF-8")
-american4=read.csv("americantest4.csv", header = FALSE ,encoding = "UTF-8")
-american5=read.csv("americantest5.csv", header = FALSE ,encoding = "UTF-8")
-american6=read.csv("americantest6.csv", header = FALSE ,encoding = "UTF-8")
-american7=read.csv("americantest7.csv", header = FALSE ,encoding = "UTF-8")
-american=c(american1,american2,american3,american4,american5,american6,american7)
-american=unique(unlist(american))
-#american0 <- as.factor(american[,1])
-american1.0=gsub("\\(composer)|\\(pianist)|\\(conductor)|\\(guitarist)|\\(musician)|\\ (musicologist)|\\(singer-songwriter)|\\ (Fluxus musician)","",american)
-american1.1=strsplit(as.character(american1.0)," ")
-
-#matching method one. change the name format of american composer list into last name ",  " first name and exact match with pop score table
-american1.2=list(rep(0,length(american1.1)))
-for ( i in 1:length(american1.1)){
-  if (length(american1.1[[i]])>1)
-    american1.2[i]=paste(american1.1[[i]][length(american1.1[[i]])],american1.1[[i]][1],sep=",  ")
-}
-american1.2=american1.2[!is.na(american1.2)]
-l=list(rep(0, length(american1.2)))
-l=c()
-for ( i in 1:length(american1.2)){
-  l=c(l,which(american1.2[i]==popScoreComposerComplete$composers))
-}
-americans=popScoreComposerComplete$composers[l]
-americansPop=popScoreComposerComplete[l,]
-americansPopSum=colSums(americansPop[2:175])
-qplot(seq_along(americansPopSum),americansPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")
-
-#matching method 2. 
-# k=c()
-# test=american1.1=strsplit(as.character(american1.0)," ")
-# for ( i in 1:length(american1.1)){
-#   for ( j in 1:length(test)){
-#     if(length(which(american1.1[[i]][1]==test[[j]][length(test[[j]])]))>0 && 
-#      length(which(american1.1[[i]][length(test[[i]])]==test[[j]][1]))>0){
-#       k=c(k,i)
-#     }
-#   }
-# }
-```
-The graph shows a general increase of American composers' proportion over time, and the next step is to see the proportion of American composers over living composers over time. The taper down in the end might be the rise of Asian composers. 
-
-The top twenty american composers are
-```{r}
-americanTop=rowSums(americansPop[2:175],na.rm=TRUE)
-americanTop=cbind(as.data.frame(americans)[1],americanTop)
-americanTop1=americanTop[order(-americanTop$americanTop),]
-#test1=rowSums(popScoreSumComp1$popScoreSumComp)
-head(americanTop1,20)
-```
-
-# Scraping composer birth and death year. 
-For this part, I am scraping wikipedia page as well. The web pages' structure for different time period is different. I scraped the classical era composer's birth and death year page (https://en.wikipedia.org/wiki/List_of_Classical-era_composers) in python with the following code.
-```{r}
 img04 <- readPNG("classicalCode.png")
 grid.raster(img04)
 ```
@@ -237,9 +146,9 @@ for (i in 1:length(year)){
 yearD=unlist(yearD)
 
 names=list(rep(0,length(classical1)))
-for (i in 1:length(classical1)){
-  names[i]=strsplit(classical1[[i]],"")[[i]][1]
-}
+#for (i in 1:length(classical1)){
+ # names[i]=strsplit(classical1[[i]],"")[[1]][1]
+#}
 ```
 
 I use rvest to scrape the page for romantic era composers page(https://en.wikipedia.org/wiki/List_of_Romantic-era_composers), twentieth century composers' page(https://en.wikipedia.org/wiki/List_of_20th-century_classical_composers), and twenty first century composers' page (https://en.wikipedia.org/wiki/List_of_21st-century_classical_composers). 
@@ -261,7 +170,7 @@ for (i in 1:nrow(tables)){
 twentiethC=tables[2:4]
 ```
 
-```{r}
+```{r,eval=FALSE}
 twentiethC <- read.csv("~/GitHub/azhangproject/twentiethC.csv", row.names=1,encoding="UTF-8")
 #substitute NAs with current year
 
@@ -273,10 +182,10 @@ for (i in 1: nrow(twentiethC)){
 }
 
 twentiethCS=twentiethC[3:1963,c(2,6)]
-names(twentiethCS)[names(twentiethCS)=="Year.of.death"]="death"
-colnames(twentiethCS$Year.of.death)="death"
-twentiethCS$death=as.character(twentiethCS$death)
-twentiethCS$death[is.na(twentiethCS$death)]=2016
+#names(twentiethCS)[names(twentiethCS)=="Year.of.death"]="death"
+#colnames(twentiethCS$Year.of.death)="death"
+twentiethCS$Year.of.death=as.character(twentiethCS$Year.of.death)
+twentiethCS$Year.of.death[is.na(twentiethCS$Year.of.death)]=2016
 
 l=c()
 for (i in 1:nrow(twentiethC)){
@@ -285,7 +194,7 @@ for (i in 1:nrow(twentiethC)){
 #find the col number of the first non 0 value and get the year
 ```
 
-```{r}
+```{r,,eval=FALSE}
 comp=composerBySeasonComplete[1:175]
 l=c()
 for (i in 1: nrow(comp)){
@@ -317,13 +226,280 @@ for (i in 1:nrow(tables)){
 twentyFirstC=tables[2:4]
 ```
 
-```{r}
+```{r,eval=FALSE}
 twentyfirstC <- read.csv("~/GitHub/azhangproject/twentyfirstC.csv", row.names=1,encoding="UTF-8")
 ```
 
+
+## 4.Composer Nationalities and Politics and Economy 
+In this part, I want to ask several questions:  
+1. Does the number of German composers' work decrease during WWI?  
+2. Does the number of German composers' work decrease during WWII?  
+3. Does the number of Russian composers' work decrease during the cold war?  
+4. As the economy rise in asian and latin american countries, will the number of their works increase over time? 
+
+To do this we need to identify the nationality of composers whose works are performed by the NY Philharmic. The NY Philharmonic data do not have the nationalities of composers. Therefore, I scraped wikipedia page and got a lists of composers nationalities data.
+I got the most of the composers nationality scores by scraping this page and the links in the page: (https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality) using the following python code
+```{r}
+img02 <- readPNG("2016-03-26b.png")
+grid.raster(img02)
+```
+
+However, some pages, for example the American composer page (https://en.wikipedia.org/w/index.php?title=Category:American_classical_composers) has multiple pages, and it is hard to go through every page in my code. So I scraped every page by clicking by hand and rbind them together in R
+
+```{r}
+img03 <- readPNG("scrapeNationality2.png")
+grid.raster(img03)
+```
+
+####American.
+I stacked the data from multiple pages, cleaned them and matched them with the popularity score table and computed the proportion of the number of American composers whose works are performed by the NY Philharmonic over total number of works performed by the NY Philharmonic over time.
+```{r}
+require(ggplot2)
+american1=read.csv("americantest1.csv", header = FALSE ,encoding = "UTF-8")
+american2=read.csv("americantest2.csv", header = FALSE ,encoding = "UTF-8")
+american3=read.csv("americantest3.csv", header = FALSE ,encoding = "UTF-8")
+american4=read.csv("americantest4.csv", header = FALSE ,encoding = "UTF-8")
+american5=read.csv("americantest5.csv", header = FALSE ,encoding = "UTF-8")
+american6=read.csv("americantest6.csv", header = FALSE ,encoding = "UTF-8")
+american7=read.csv("americantest7.csv", header = FALSE ,encoding = "UTF-8")
+american=c(american1,american2,american3,american4,american5,american6,american7)
+american=unique(unlist(american))
+
+#american0 <- as.factor(american[,1])
+american1.0=gsub("\\(composer)|\\(pianist)|\\(conductor)|\\(guitarist)|\\(musician)|\\ (musicologist)|\\(singer-songwriter)|\\ (Fluxus musician)","",american)
+american1.1=strsplit(as.character(american1.0)," ")
+
+#matching method one. change the name format of american composer list into last name ",  " first name and exact match with pop score table
+american1.2=list(rep(0,length(american1.1)))
+
+for ( i in 1:length(american1.1)){
+  if (length(american1.1[[i]])>1)
+    #Lname[i]=american1.1[[i]][length(american1.1[[i]])]
+    #Fname[i]=paste(american1.1[[i]][1:length(american1.1[[i]])-1], collapse=" ")
+    american1.2[i]=paste(american1.1[[i]][length(american1.1[[i]])],paste(american1.1[[i]][1:length(american1.1[[i]])-1], collapse=" "),sep=",  ")
+}
+american1.2=american1.2[!is.na(american1.2)]
+l=list(rep(0, length(american1.2)))
+l=c()
+for ( i in 1:length(american1.2)){
+  l=c(l,which(american1.2[i]==popScoreComposerComplete$composers))
+}
+americans=popScoreComposerComplete$composers[l]
+americansPop=popScoreComposerComplete[l,]
+americansPopSum=colSums(americansPop[2:175])
+qplot(seq_along(americansPopSum),americansPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+
+
+#americans=composerBySeasonComplete$composers[l]
+#americansPop=composerBySeasonComplete[l,]
+#americansPopSum=colSums(americansPop[2:175])
+#qplot(seq_along(americansPopSum),americansPopSum)
+#+geom_line()+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+
+#matching method 2. 
+# k=c()
+# test=american1.1=strsplit(as.character(american1.0)," ")
+# for ( i in 1:length(american1.1)){
+#   for ( j in 1:length(test)){
+#     if(length(which(american1.1[[i]][1]==test[[j]][length(test[[j]])]))>0 && 
+#      length(which(american1.1[[i]][length(test[[i]])]==test[[j]][1]))>0){
+#       k=c(k,i)
+#     }
+#   }
+# }
+```
+The graph shows a general increase of the proportion of the number of American composers over total number of composers over time, and the next step is to see the proportion of the number of American composers over the number of living composers over time. 
+
+The top twenty american composers are
+```{r}
+americanTop=rowSums(americansPop[2:175],na.rm=TRUE)
+americanTop=cbind(as.data.frame(americans)[1],americanTop)
+americanTop1=americanTop[order(-americanTop$americanTop),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(americanTop1,20)
+```
+
+####Germany.
+```{r}
+german1=read.csv("germantest1.csv", header = FALSE ,encoding = "UTF-8")
+german2=read.csv("germantest2.csv", header = FALSE ,encoding = "UTF-8")
+german3=read.csv("germantest3.csv", header = FALSE ,encoding = "UTF-8")
+german4=read.csv("germantest4.csv", header = FALSE ,encoding = "UTF-8")
+german5=read.csv("germantest5.csv", header = FALSE ,encoding = "UTF-8")
+
+german=c(german1,german2,german3,german4,german5)
+german=unique(unlist(german))
+german1.0=gsub("\\(composer)","",german)
+german1.0=gsub("\\(baroque composer)","",german1.0)
+german1.0=gsub("\\(Altstadt Kantor)","",german1.0)
+german1.0=gsub("\\(Morean)","",german1.0)
+german1.0=gsub("\\(1772¨C1806)","",german1.0)
+german1.0=gsub("\\(conductor)","",german1.0)
+german1.0=gsub("\\(the elder)","",german1.0)
+german1.0=gsub("\\(the younger)","",german1.0)
+german1.0=gsub("\\(musician)","",german1.0)
+german1.0=gsub("\\(organist)","",german1.0)
+german1.0=gsub("\\(guitarist)","",german1.0)
+german1.0=gsub("\\(musician at Arnstadt)","",german1.0)
+german1.1=strsplit(as.character(german1.0)," ")
+
+#matching method one. change the name format of american composer list into last name ",  " first name and exact match with pop score table
+german1.2=list(rep(0,length(german1.1)))
+for ( i in 1:length(german1.1)){
+  if (length(german1.1[[i]])>1){
+    german1.2[i]=paste(german1.1[[i]][length(german1.1[[i]])],paste(german1.1[[i]][1:length(german1.1[[i]])-1], collapse=" "),sep=",  ")
+  }
+}
+german1.2=german1.2[!is.na(german1.2)]
+
+l=c()
+for ( i in 1:length(german1.2)){
+  l=c(l,which(german1.2[i]==popScoreComposerComplete$composers))
+}
+german=popScoreComposerComplete$composers[l]
+germanPop=popScoreComposerComplete[l,]
+germanPopSum=colSums(germanPop[2:175])
+qplot(seq_along(germanPopSum),germanPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+
+#german=composerBySeasonComplete$composers[l]
+#germanPop=composerBySeasonComplete[l,]
+#germanPopSum=colSums(germanPop[2:175])
+#qplot(seq_along(germanPopSum),germanPopSum)
+#+geom_line()+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+
+```
+
+```{r}
+germanTop=rowSums(germanPop[2:175],na.rm=TRUE)
+germanTop=cbind(as.data.frame(german)[1],germanTop)
+germanTop1=germanTop[order(-germanTop$germanTop),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(germanTop1,20)
+```
+
+#####Wagner
+```{r}
+wagner=as.numeric(popScoreComposerComplete[81,2:175])
+qplot(seq_along(wagner),wagner)+geom_line()+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+####Russian
+```{r}
+russian1=read.csv("russiantest1.csv", header = FALSE ,encoding = "UTF-8")
+russian2=read.csv("russiantest2.csv", header = FALSE ,encoding = "UTF-8")
+russian=c(russian1,russian2)
+russian=unique(unlist(russian))
+
+russian1.0=gsub("\\(composer)","",russian)
+russian1.0=gsub("\\(conductor)","",russian1.0)
+russian1.1=strsplit(as.character(russian1.0)," ")
+
+russian1.2=list(rep(0,length(russian1.1)))
+for ( i in 1:length(russian1.1)){
+  if (length(russian1.1[[i]])>1)
+    russian1.2[i]=paste(russian1.1[[i]][length(russian1.1[[i]])],paste(russian1.1[[i]][1:length(russian1.1[[i]])-1], collapse=" "),sep=",  ")
+}
+russian1.2=russian1.2[!is.na(russian1.2)]
+l=c()
+for ( i in 1:length(russian1.2)){
+  l=c(l,which(russian1.2[i]==popScoreComposerComplete$composers))
+}
+
+russianPop=popScoreComposerComplete[l,]
+russianPopSum=colSums(russianPop[2:175])
+qplot(seq_along(russianPopSum),russianPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+
+russian=composerBySeasonComplete$composers[l]
+#russianPop=composerBySeasonComplete[l,]
+#russianPopSum=colSums(russianPop[2:175])
+#qplot(seq_along(russianPopSum),russianPopSum)
+#+geom_line()+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+russianTop=rowSums(russianPop[2:175],na.rm=TRUE)
+russianTop=cbind(as.data.frame(russian)[1],russianTop)
+russianTop1=russianTop[order(-russianTop$russianTop),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(russianTop1,20)
+```
+
+
+#####shostakovich
+```{r}
+test=grep("Shostakovich",popScoreComposerComplete$composers)
+dmitri=as.numeric(popScoreComposerComplete[test,2:175])
+qplot(seq_along(dmitri),dmitri)+geom_line()+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+
+####The Rise of Women Composers
+The feminist movements accelerated in 1960s. It first starts in political and economics equality between men and women, and spread to the culture sectors. Can we find this reflected in NY Phil performance data?
+
+We need the proportion of the number of woman composers over the total number of composers whose works are performed by the NY philharmonic over time, but NY Philharmonic's data do not have gender information for each composer. Therefore, I scraped wikipedia pages' listing women composers (https://en.wikipedia.org/wiki/List_of_female_composers_by_birth_year) in python. I computed the proportion of women composers' works performed in each season over the total number of composers whose works are performed by the NY Philharmonic in each season and graphed it. 
+ 
+```{r}
+img01 <- readPNG("women.png")
+grid.raster(img01)
+```
+
+```{r}
+women<- read.csv("women.csv", header = FALSE,encoding="UTF-8")
+
+woman1.0=women$V1
+woman1.1=strsplit(as.character(woman1.0)," ")
+woman1.2=list(rep(0,length(woman1.1)))
+for ( i in 1:length(woman1.1)){
+  if (length(woman1.1[[i]])>1){
+    woman1.2[i]=paste(woman1.1[[i]][length(woman1.1[[i]])],paste(woman1.1[[i]][1:length(woman1.1[[i]])-1], collapse=" "),sep=",  ")
+  }
+}
+l=c()
+for ( i in 1:length(woman1.2)){
+  l=c(l,which(woman1.2[i]==popScoreComposerComplete$composers))
+}
+
+woman=popScoreComposerComplete$composers[l]
+womanPop=popScoreComposerComplete[l,]
+womanPopSum=colSums(womanPop[2:175])
+qplot(seq_along(womanPopSum),womanPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+#womancomposers <- read.csv("womancomposers.csv", header = FALSE, quote = "'")
+#womenAsChar <- character(ncol(womancomposers))
+#for (i in 1:ncol(womancomposers)) {
+#  womanString <- as.character(womancomposers[1,i])
+#  if (substr(womanString, 1, 1) == " ") womanString <- substr(womanString, 2, nchar(womanString))
+#  if (substr(womanString, 1, 1) == "u") womanString <- substr(womanString, 2, nchar(womanString))
+#  womenAsChar[i] <- womanString # as.character(womancomposers[1,i])
+#}
+
+#l=c()
+#for ( i in 1:length(womenAsChar)){
+#  l=c(l,which(womenAsChar[i]==popScoreComposerComplete$composers))
+#}
+
+
+#womancom=popScoreComposerComplete[l,]
+#womancomoScore=colSums(womancom[2:175])
+#plot(womancomoScore, type = "l")
+
+#malecom=popScoreComposerComplete[-l,]
+#malecomoScore=colSums(malecom[2:175])
+#plot(malecomoScore, type = "l")
+
+#require(ggplot2)
+#qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842 :2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+The graph shows that there is not much increase in the proportion of the number of women composers over time. However, this does not show that women are not becoming more and more important in the field of classical music because there are so few of them in Baroque, classical and romantical era when nearly all composers were male. The existence of a meaningful number of women composer starts only recently. Therefore, the next step is to restrict the time-range of this comparison to wehre there is meaningful data-limit the analysis to living composers only. 
+
+
 to do:
-1. better matching algorithms for women composer list and nationality list with popularity score by first and last name rather than full name
+1. better matching algorithms (mahler, shostakovich ,bach. tchaikovsky  (space bewteen first and middle name)); 
+add gershwin and kate soper or not
 2. remove (composer) from the american list
-2. read non English letters in xml file and wiki list of composer file
 3. matching algorith for death year and pop score: year die>earliest work present season
 4. better graph
+5.add gershwin and kat soper to the list or not

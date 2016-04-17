@@ -122,7 +122,7 @@ composerBySeasonComplete$composers=gsub("  ", " ", composerBySeasonComplete$comp
 ```
 
 
-# 3. The contemporaneousness of NY Philharmonic reportories and the change of US economy
+# 3. The contemporality of NY Philharmonic reportories and the change of US economy
 Even though NY Philharmonic is a classical music institution, it is still important for it to not only play established composers' works but also play contemporary composers' work. Especially, the composer in residence program at NY philharmonic shows that NY philharmonic is working on promoting living composers' works.  
 
 Only at economically stable and affluent times are people able to invest on music and art education. This will increase the number of contemporary composers. With the additional sources of new music we should see this reflected by a relative increase in the proportion of works by contemporary rather than deceased composers being performed. Therefore, we should look for relationships between US economic measurements like GDP and the proportion of contemporary works performed. 
@@ -162,7 +162,6 @@ for (i in 1:length(classical1)){
 classical3=cbind(Year.of.death,Name1)
 classical3=as.data.frame((classical3))
 classical4=suppressWarnings(subset(classical3,Year.of.death>=1842))
-#names(classical4)[names(classical4)=="Year.of.death"] <- "Year.of.death"
 ```
 
 I use rvest to scrape the page for romantic era composers page(https://en.wikipedia.org/wiki/List_of_Romantic-era_composers), twentieth century composers' page(https://en.wikipedia.org/wiki/List_of_20th-century_classical_composers), and twenty first century composers' page (https://en.wikipedia.org/wiki/List_of_21st-century_classical_composers). 
@@ -184,10 +183,6 @@ for (i in 1:nrow(tables)){
   tables$Name1[i]=test2
 }
 twentiethC=tables[2:4]
-# twentiethCS=twentiethC[2:3]
-# twentiethCS$"Year of death"=as.character(twentiethCS$"Year of death")
-# twentiethCS$"Year of death"[is.na(twentiethCS$"Year of death")]=2016
-# dyear=rbind(classical4,twentiethCS)
 ```
 
 ```{r,eval=FALSE}
@@ -196,8 +191,6 @@ html <- read_html(url, encoding="UTF-8")
 tables <- html_table(html, fill=TRUE)
 tables=tables[[2]]
 tables=tables[1:3]
-#write.csv(tables,"test0328.csv")
-#tables=read.csv("test0328.csv", encoding="UTF-8")
 for (i in 1:nrow(tables)){
   test=unlist(strsplit(tables$Names[i],""))
   n=(length(test)+1)/2
@@ -206,14 +199,6 @@ for (i in 1:nrow(tables)){
   tables$Name1[i]=test2
 }
 twentyfirstC=tables[2:4]
-# #twentiethC <- read.csv("twentiethC.csv",row.names=1, encoding="UTF-8")
-# #twentyfirstC <- read.csv("twentyfirstC.csv",row.names=1,header=FALSE,encoding="UTF-8")
-# twentyfirstC$Death=as.character(twentyfirstC$Death)
-# twentyfirstC$Death[is.na(twentyfirstC$Death)]=2016
-# names(twentyfirstC)[names(twentyfirstC)=="Death"] <- "Year.of.death"
-# twentyfirstC=twentyfirstC[2:3]
-# #names(twentyfirstC)[names(twentyfirstC)=="V4"] <- "Name1"
-# dyear=rbind(dyear,twentyfirstC)
 ```
 
 ```{r}
@@ -270,6 +255,17 @@ qplot(seq_along(as.double(SumSeasContemp)),as.double(SumSeasContemp))+ylim(0,1)+
 ```
 the graph shows that the proportion of works of composers who is contemporary of their time increase over the time. 
 
+GDP anuual rate of change
+http://www.multpl.com/us-gdp-growth-rate
+https://research.stlouisfed.org/fred2/series/GDP/downloaddata
+
+??? y axis goes to 200???
+```{r}
+gdp=read.csv("GDP.csv")
+plot(gdp$VALUE,gdp$VALUE)
+qplot(seq_along(as.double(gdp$VALUE)),as.double(gdp$VALUE))+geom_line()+scale_x_discrete(labels =(1947:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
 
 ## 4.Composer Nationalities and Politics and Economy 
 In this part, I want to ask several questions:  
@@ -306,17 +302,13 @@ american7=read.csv("americantest7.csv", header = FALSE ,encoding = "UTF-8")
 american=c(american1,american2,american3,american4,american5,american6,american7)
 american=unique(unlist(american))
 
-#american0 <- as.factor(american[,1])
 american1.0=gsub("\\(composer)|\\(pianist)|\\(conductor)|\\(guitarist)|\\(musician)|\\ (musicologist)|\\(singer-songwriter)|\\ (Fluxus musician)","",american)
 american1.1=strsplit(as.character(american1.0)," ")
 
-#matching method one. change the name format of american composer list into last name ",  " first name and exact match with pop score table
 american1.2=list(rep(0,length(american1.1)))
 
 for ( i in 1:length(american1.1)){
   if (length(american1.1[[i]])>1)
-    #Lname[i]=american1.1[[i]][length(american1.1[[i]])]
-    #Fname[i]=paste(american1.1[[i]][1:length(american1.1[[i]])-1], collapse=" ")
     american1.2[i]=paste(american1.1[[i]][length(american1.1[[i]])],paste(american1.1[[i]][1:length(american1.1[[i]])-1], collapse=" "),sep=", ")
 }
 american1.2=american1.2[!is.na(american1.2)]
@@ -339,40 +331,9 @@ americanTop=cbind(as.data.frame(americans)[1],americanTop)
 americanTop1=americanTop[order(-americanTop$americanTop),]
 head(americanTop1,20)
 ```
-contemporary american composers 
+
+getting popularity scores for contemporary american composers 
 ```{r}
-# comp=composerBySeasonComplete[2:175]
-# test=list(rep(0, nrow(comp)))
-# for (i in 1: nrow(comp)){
-#     test[i]<- min(which(!is.na(comp[i,])))
-# }
-# test=unlist(test)
-# 
-# firstPerf=colnames(comp)[test]
-# 
-# firstPerf1=list(rep(0, nrow(comp)))
-# for (i in 1:length(firstPerf)){
-#   firstPerf1[i]=(unlist(strsplit(firstPerf[i],"\\."))[2])
-# }
-# firstPerf1=unlist(firstPerf1)
-# Name1=as.character(composerBySeasonComplete$composers)
-# compContemp=as.data.frame(cbind(Name1,firstPerf1))
-# 
-# test=merge(compContemp,dyear)
-# l=c()
-# for (i in 1:nrow(test)){
-#   if (as.numeric(test[i,2])<as.numeric(test[i,3])){
-#     l=c(l,i)
-#   }
-# }
-# contempComp=test[l,]
-# contempComp=contempComp$Name1
-# 
-# l=c()
-# for (i in 1:length(contempComp)){
-#   l=c(l,which(contempComp[i]==popScoreComposerComplete$composers))
-# }
-# contem=unique(popScoreComposerComplete[l,])
 l=c()
 for ( i in 1:length(american1.2)){
   l=c(l,which(american1.2[i]==contem$composers))
@@ -382,25 +343,26 @@ contemAmerPop=contem[l,]
 contemAmerPopSum=colSums(contemAmerPop[2:175])
 qplot(seq_along(contemAmerPopSum),contemAmerPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
 ```
-
+top twenty American contemporary composers
 ```{r}
 contemAmerPop=rowSums(contemAmerPop[2:175],na.rm=TRUE)
 contemAmerPopTop=cbind(as.data.frame(contemAmer)[1],contemAmerPop)
 contemAmerPopTop1=contemAmerPopTop[order(-contemAmerPopTop$contemAmerPop),]
-#test1=rowSums(popScoreSumComp1$popScoreSumComp)
 head(contemAmerPopTop1,20)
 ```
+It is not much different from the overal American composers' popularity graph as most of the American composeres rise start in the ninteenth century. 
 
-
-####Germany.
+####Germany and austria 
 ```{r}
 german1=read.csv("germantest1.csv", header = FALSE ,encoding = "UTF-8")
 german2=read.csv("germantest2.csv", header = FALSE ,encoding = "UTF-8")
 german3=read.csv("germantest3.csv", header = FALSE ,encoding = "UTF-8")
 german4=read.csv("germantest4.csv", header = FALSE ,encoding = "UTF-8")
 german5=read.csv("germantest5.csv", header = FALSE ,encoding = "UTF-8")
+austrian1=read.csv("austriantest1.csv", header = FALSE ,encoding = "UTF-8")
+austrian2=read.csv("austriantest2.csv", header = FALSE ,encoding = "UTF-8")
 
-german=c(german1,german2,german3,german4,german5)
+german=c(german1,german2,german3,german4,german5)#,austrian1,austrian2)
 german=unique(unlist(german))
 german1.0=gsub("\\(composer)","",german)
 german1.0=gsub("\\(baroque composer)","",german1.0)
@@ -414,9 +376,9 @@ german1.0=gsub("\\(musician)","",german1.0)
 german1.0=gsub("\\(organist)","",german1.0)
 german1.0=gsub("\\(guitarist)","",german1.0)
 german1.0=gsub("\\(musician at Arnstadt)","",german1.0)
+german1.0=gsub("\\(Austrian composer)","",german1.0)
 german1.1=strsplit(as.character(german1.0)," ")
 
-#matching method one. change the name format of american composer list into last name ",  " first name and exact match with pop score table
 german1.2=list(rep(0,length(german1.1)))
 for ( i in 1:length(german1.1)){
   if (length(german1.1[[i]])>1){
@@ -441,48 +403,9 @@ germanTop=cbind(as.data.frame(german)[1],germanTop)
 germanTop1=germanTop[order(-germanTop$germanTop),]
 head(germanTop1,20)
 ```
-The top twenty american composers are
+
+contemporary german and austrian composers' popularity scores
 ```{r}
-americanTop=rowSums(americansPop[2:175],na.rm=TRUE)
-americanTop=cbind(as.data.frame(americans)[1],americanTop)
-americanTop1=americanTop[order(-americanTop$americanTop),]
-#test1=rowSums(popScoreSumComp1$popScoreSumComp)
-head(americanTop1,20)
-```
-contemporary german composers 
-```{r}
-# comp=composerBySeasonComplete[2:175]
-# test=list(rep(0, nrow(comp)))
-# for (i in 1: nrow(comp)){
-#     test[i]<- min(which(!is.na(comp[i,])))
-# }
-# test=unlist(test)
-# 
-# firstPerf=colnames(comp)[test]
-# 
-# firstPerf1=list(rep(0, nrow(comp)))
-# for (i in 1:length(firstPerf)){
-#   firstPerf1[i]=(unlist(strsplit(firstPerf[i],"\\."))[2])
-# }
-# firstPerf1=unlist(firstPerf1)
-# Name1=as.character(composerBySeasonComplete$composers)
-# compContemp=as.data.frame(cbind(Name1,firstPerf1))
-# 
-# test=merge(compContemp,dyear)
-# l=c()
-# for (i in 1:nrow(test)){
-#   if (as.numeric(test[i,2])<as.numeric(test[i,3])){
-#     l=c(l,i)
-#   }
-# }
-# contempComp=test[l,]
-# contempComp=contempComp$Name1
-# 
-# l=c()
-# for (i in 1:length(contempComp)){
-#   l=c(l,which(contempComp[i]==popScoreComposerComplete$composers))
-# }
-# contem=unique(popScoreComposerComplete[l,])
 l=c()
 for ( i in 1:length(german1.2)){
   l=c(l,which(german1.2[i]==contem$composers))
@@ -497,21 +420,31 @@ qplot(seq_along(contemGermPopSum),contemGermPopSum)+geom_line()+ylim(0,1)+geom_a
 contemGermPop=rowSums(contemGermPop[2:175],na.rm=TRUE)
 contemGermPopTop=cbind(as.data.frame(contemGerm)[1],contemGermPop)
 contemGermPopTop1=contemGermPopTop[order(-contemGermPopTop$contemGermPop),]
-#test1=rowSums(popScoreSumComp1$popScoreSumComp)
 head(contemGermPopTop1,20)
 ```
+Contemporary German composers are never very popular in NY Phil probably because the deseased German composers are overshining over the contemporary composers. 
 
 #####Wagner
 ```{r}
 wagner=as.numeric(popScoreComposerComplete[81,2:175])
 qplot(seq_along(wagner),wagner)+geom_line()+geom_area(colour="black")+ylim(0,1)+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
 ```
+The graph shows that Hitler's favorite composer Wagner's popularity significantly decreased after WWII.
 
-####Russian
+#### "Soviet" countries
 ```{r}
 russian1=read.csv("russiantest1.csv", header = FALSE ,encoding = "UTF-8")
 russian2=read.csv("russiantest2.csv", header = FALSE ,encoding = "UTF-8")
-russian=c(russian1,russian2)
+czech1=read.csv("czechtest1.csv", header = FALSE ,encoding = "UTF-8")
+czech2=read.csv("czechtest2.csv", header = FALSE ,encoding = "UTF-8")
+hungarian=read.csv("Hungarian.csv", header = FALSE ,encoding = "UTF-8")
+lithuanian=read.csv("Lithuanian.csv", header = FALSE ,encoding = "UTF-8")
+romanian=read.csv("Romanian.csv", header = FALSE ,encoding = "UTF-8")
+slovenian=read.csv("Slovenian.csv", header = FALSE ,encoding = "UTF-8")
+ukrainian=read.csv("Ukrainian.csv", header = FALSE ,encoding = "UTF-8")
+bulgarian=read.csv("Bulgarian.csv", header = FALSE ,encoding = "UTF-8")
+polish=read.csv("Polish.csv", header = FALSE ,encoding = "UTF-8")
+russian=c(russian1,russian2) #, czech1,czech2, hungarian,polish, lithuanian,romanian,slovenian,ukrainian,bulgarian)
 russian=unique(unlist(russian))
 
 russian1.0=gsub("\\(composer)","",russian)
@@ -533,12 +466,6 @@ russian=popScoreComposerComplete$composers[l]
 russianPop=popScoreComposerComplete[l,]
 russianPopSum=colSums(russianPop[2:175])
 qplot(seq_along(russianPopSum),russianPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
-
-#russian=composerBySeasonComplete$composers[l]
-#russianPop=composerBySeasonComplete[l,]
-#russianPopSum=colSums(russianPop[2:175])
-#qplot(seq_along(russianPopSum),russianPopSum)
-#+geom_line()+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
 ```
 
 ```{r}
@@ -549,40 +476,8 @@ russianTop1=russianTop[order(-russianTop$russianTop),]
 head(russianTop1,20)
 ```
 
-contemporary russian composers 
+contemporary russian composers' popularity scores 
 ```{r}
-# comp=composerBySeasonComplete[2:175]
-# test=list(rep(0, nrow(comp)))
-# for (i in 1: nrow(comp)){
-#     test[i]<- min(which(!is.na(comp[i,])))
-# }
-# test=unlist(test)
-# 
-# firstPerf=colnames(comp)[test]
-# 
-# firstPerf1=list(rep(0, nrow(comp)))
-# for (i in 1:length(firstPerf)){
-#   firstPerf1[i]=(unlist(strsplit(firstPerf[i],"\\."))[2])
-# }
-# firstPerf1=unlist(firstPerf1)
-# Name1=as.character(composerBySeasonComplete$composers)
-# compContemp=as.data.frame(cbind(Name1,firstPerf1))
-# 
-# test=merge(compContemp,dyear)
-# l=c()
-# for (i in 1:nrow(test)){
-#   if (as.numeric(test[i,2])<as.numeric(test[i,3])){
-#     l=c(l,i)
-#   }
-# }
-# contempComp=test[l,]
-# contempComp=contempComp$Name1
-# 
-# l=c()
-# for (i in 1:length(contempComp)){
-#   l=c(l,which(contempComp[i]==popScoreComposerComplete$composers))
-# }
-# contem=unique(popScoreComposerComplete[l,])
 l=c()
 for ( i in 1:length(russian1.2)){
   l=c(l,which(russian1.2[i]==contem$composers))
@@ -600,6 +495,7 @@ contemRussianPopTop1=contemRussianPopTop[order(-contemRussianPopTop$contemRussia
 #test1=rowSums(popScoreSumComp1$popScoreSumComp)
 head(contemRussianPopTop1,20)
 ```
+The graph shows that there is an increase of Russian composers after WWII during the cold war, probably because many important Russian composers rise during that time. This shows that the cold war does not affect the introducing of Russian music to the US. 
 
 #####shostakovich
 ```{r}
@@ -607,6 +503,277 @@ test=grep("Shostakovich",popScoreComposerComplete$composers)
 dmitri=as.numeric(popScoreComposerComplete[test,2:175])
 qplot(seq_along(dmitri),dmitri)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
 ```
+
+
+####french
+```{r}
+french1=read.csv("frenchtest1.csv", header = FALSE ,encoding = "UTF-8")
+french2=read.csv("frenchtest2.csv", header = FALSE ,encoding = "UTF-8")
+french3=read.csv("frenchtest3.csv", header = FALSE ,encoding = "UTF-8")
+french4=read.csv("frenchtest4.csv", header = FALSE ,encoding = "UTF-8")
+french=c(french1,french2,french3,french4)
+french=unique(unlist(french))
+
+french1.0=gsub("\\(composer)","",french)
+french1.0=gsub("\\(conductor)","",french1.0)
+french1.0=gsub("\\(1907¨C1970)","",french1.0)
+french1.0=gsub("\\(organist)","",french1.0)
+french1.0=gsub("\\(violist)","",french1.0)
+french1.0=gsub("\\(musician) ","",french1.0)
+french1.0=gsub("\\(Chantilly Codex composer) ","",french1.0)
+french1.0=gsub("\\(lutenist)  ","",french1.0)
+french1.1=strsplit(as.character(french1.0)," ")
+
+french1.2=list(rep(0,length(french1.1)))
+for ( i in 1:length(french1.1)){
+  if (length(french1.1[[i]])>1)
+    french1.2[i]=paste(french1.1[[i]][length(french1.1[[i]])],paste(french1.1[[i]][1:length(french1.1[[i]])-1], collapse=" "),sep=", ")
+}
+french1.2=french1.2[!is.na(french1.2)]
+l=c()
+for ( i in 1:length(french1.2)){
+  l=c(l,which(french1.2[i]==popScoreComposerComplete$composers))
+}
+
+french=popScoreComposerComplete$composers[l]
+frenchPop=popScoreComposerComplete[l,]
+frenchPopSum=colSums(frenchPop[2:175])
+qplot(seq_along(frenchPopSum),frenchPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+frenchTop=rowSums(frenchPop[2:175],na.rm=TRUE)
+frenchTop=cbind(as.data.frame(french)[1],frenchTop)
+frenchTop1=frenchTop[order(-frenchTop$frenchTop),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(frenchTop1,20)
+```
+
+contemporary french composers' popularity scores
+```{r}
+l=c()
+for ( i in 1:length(french1.2)){
+  l=c(l,which(french1.2[i]==contem$composers))
+}
+contemfrn=contem$composers[l]
+contemfrnPop=contem[l,]
+contemfrnPopSum=colSums(contemfrnPop[2:175])
+qplot(seq_along(contemfrnPopSum),contemfrnPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+contemfrnPop=rowSums(contemfrnPop[2:175],na.rm=TRUE)
+contemfrnPopTop=cbind(as.data.frame(contemfrn)[1],contemfrnPop)
+contemfrnPopTop1=contemfrnPopTop[order(-contemfrnPopTop$contemfrnPop),]
+head(contemfrnPopTop1,20)
+```
+
+####italian
+```{r}
+itallian1=read.csv("italiantest1.csv", header = FALSE ,encoding = "UTF-8")
+itallian2=read.csv("italiantest2.csv", header = FALSE ,encoding = "UTF-8")
+itallian3=read.csv("italiantest3.csv", header = FALSE ,encoding = "UTF-8")
+itallian4=read.csv("italiantest4.csv", header = FALSE ,encoding = "UTF-8")
+itallian5=read.csv("italiantest5.csv", header = FALSE ,encoding = "UTF-8")
+italian=c(itallian1,itallian2,itallian3,itallian4,itallian5)
+italian=unique(unlist(italian))
+
+italian1.0=gsub("\\(composer)","",italian)
+italian1.0=gsub("\\(conductor)","",italian1.0)
+italian1.0=gsub("\\(classical era composer)","",italian1.0)
+italian1.0=gsub("\\ (senior)","",italian1.0)
+italian1.1=strsplit(as.character(italian1.0)," ")
+
+italian1.2=list(rep(0,length(italian1.1)))
+for ( i in 1:length(italian1.1)){
+  if (length(italian1.1[[i]])>1)
+    italian1.2[i]=paste(italian1.1[[i]][length(italian1.1[[i]])],paste(italian1.1[[i]][1:length(italian1.1[[i]])-1], collapse=" "),sep=", ")
+}
+italian1.2=italian1.2[!is.na(italian1.2)]
+l=c()
+for ( i in 1:length(italian1.2)){
+  l=c(l,which(italian1.2[i]==popScoreComposerComplete$composers))
+}
+
+italian=popScoreComposerComplete$composers[l]
+italianPop=popScoreComposerComplete[l,]
+italianPopSum=colSums(italianPop[2:175])
+qplot(seq_along(italianPopSum),italianPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+italianTop=rowSums(italianPop[2:175],na.rm=TRUE)
+italianTop=cbind(as.data.frame(italian)[1],italianTop)
+italianTop1=italianTop[order(-italianTop$italianTop),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(italianTop1,20)
+```
+contemporary italian composers' popularity scores
+```{r}
+l=c()
+for ( i in 1:length(italian1.2)){
+  l=c(l,which(italian1.2[i]==contem$composers))
+}
+contemitn=contem$composers[l]
+contemitnPop=contem[l,]
+contemitnPopSum=colSums(contemitnPop[2:175])
+qplot(seq_along(contemitnPopSum),contemitnPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+contemitnPop=rowSums(contemitnPop[2:175],na.rm=TRUE)
+contemitnPopTop=cbind(as.data.frame(contemitn)[1],contemitnPop)
+contemitnPopTop1=contemitnPopTop[order(-contemitnPopTop$contemitnPop),]
+head(contemitnPopTop1,20)
+```
+
+#### asian and latin american
+```{r}
+chinese=read.csv("Chinese.csv", header = FALSE ,encoding = "UTF-8")
+taiwanese=read.csv("Taiwanese.csv", header = FALSE ,encoding = "UTF-8")
+japanese=read.csv("Japanese.csv", header = FALSE ,encoding = "UTF-8")
+indian=read.csv("Indian.csv", header = FALSE ,encoding = "UTF-8")
+turkish=read.csv("Turkish.csv", header = FALSE ,encoding = "UTF-8")
+iranian=read.csv("Iranian.csv", header = FALSE ,encoding = "UTF-8")
+
+mexican=read.csv("Mexican.csv", header = FALSE ,encoding = "UTF-8")
+brazilian=read.csv("Brazilian.csv", header = FALSE ,encoding = "UTF-8")
+argentine=read.csv("Argentine.csv", header = FALSE ,encoding = "UTF-8")
+asian=c(chinese, taiwanese,japanese, indian,turkish, brazilian, argentine)
+asian=unique(unlist(asian))
+
+asian1.0=gsub("\\(composer)","",asian)
+asian1.0=gsub("\\(musician)","",asian1.0)
+asian1.1=strsplit(as.character(asian1.0)," ")
+
+asian1.2=list(rep(0,length(asian1.1)))
+for ( i in 1:length(asian1.1)){
+  if (length(asian1.1[[i]])>1)
+    asian1.2[i]=paste(asian1.1[[i]][length(asian1.1[[i]])],paste(asian1.1[[i]][1:length(asian1.1[[i]])-1], collapse=" "),sep=", ")
+}
+asian1.2=asian1.2[!is.na(asian1.2)]
+l=c()
+for ( i in 1:length(asian1.2)){
+  l=c(l,which(asian1.2[i]==popScoreComposerComplete$composers))
+}
+
+asian=popScoreComposerComplete$composers[l]
+asianPop=popScoreComposerComplete[l,]
+asianPopSum=colSums(asianPop[2:175])
+qplot(seq_along(asianPopSum),asianPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+
+```{r}
+asianTop=rowSums(asianPop[2:175],na.rm=TRUE)
+asianTop=cbind(as.data.frame(asian)[1],asianTop)
+asianTop1=asianTop[order(-asianTop$asianTop),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(asianTop1,20)
+```
+contemporary asian and latin american composers' popularity scores
+```{r}
+l=c()
+for ( i in 1:length(asian1.2)){
+  l=c(l,which(italian1.2[i]==contem$composers))
+}
+contemasian=contem$composers[l]
+contemasianPop=contem[l,]
+contemasianPopSum=colSums(contemasianPop[2:175])
+qplot(seq_along(contemasianPopSum),contemasianPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+contemasianPop=rowSums(contemasianPop[2:175],na.rm=TRUE)
+contemasianPopTop=cbind(as.data.frame(contemasian)[1],contemasianPop)
+contemasianPopTop1=contemasianPopTop[order(-contemasianPopTop$contemasianPop),]
+head(contemasianPopTop1,20)
+```
+
+
+#### jewish composers
+```{r}
+jew1=read.csv("jew1.csv", header = FALSE ,encoding = "UTF-8")
+jew2=read.csv("jew2.csv", header = FALSE ,encoding = "UTF-8")
+
+jew=c(jew1,jew2)
+jew=unique(unlist(jew))
+
+jew1.0=gsub("\\(composer)","",jew)
+jew1.0=gsub("\\(Dutch composer)","",jew1.0)
+jew1.0=gsub("\\musician","",jew1.0)
+jew1.1=strsplit(as.character(jew1.0)," ")
+
+jew1.2=list(rep(0,length(jew1.1)))
+for ( i in 1:length(jew1.1)){
+  if (length(jew1.1[[i]])>1)
+    jew1.2[i]=paste(jew1.1[[i]][length(jew1.1[[i]])],paste(jew1.1[[i]][1:length(jew1.1[[i]])-1], collapse=" "),sep=", ")
+}
+jew1.2=jew1.2[!is.na(jew1.2)]
+l=c()
+for ( i in 1:length(jew1.2)){
+  l=c(l,which(jew1.2[i]==popScoreComposerComplete$composers))
+}
+
+jew=popScoreComposerComplete$composers[l]
+jewPop=popScoreComposerComplete[l,]
+jewPopSum=colSums(jewPop[2:175])
+qplot(seq_along(jewPopSum),jewPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+  theme(axis.text.x = element_text(angle = 45,size=5, hjust = 1))+scale_x_discrete(labels=seq(1842,2015,by=2))
+```
+
+
+```{r}
+jewTop=rowSums(jewPop[2:175],na.rm=TRUE)
+jewTop=cbind(as.data.frame(jew)[1],jewTop)
+jewTop1=jewTop[order(-jewTop$jewTop),]
+#test1=rowSums(popScoreSumComp1$popScoreSumComp)
+head(jewTop1,20)
+```
+contemporary jewish composers' popularity scores
+```{r}
+l=c()
+for ( i in 1:length(jew1.2)){
+  l=c(l,which(jew1.2[i]==contem$composers))
+}
+contemjew=contem$composers[l]
+contemjewPop=contem[l,]
+contemjewPopSum=colSums(contemjewPop[2:175])
+qplot(seq_along(contemjewPopSum),contemjewPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+contemjewPop=rowSums(contemjewPop[2:175],na.rm=TRUE)
+contemjewPopTop=cbind(as.data.frame(contemjew)[1],contemjewPop)
+contemjewPopTop1=contemjewPopTop[order(-contemjewPopTop$contemjewPop),]
+head(contemjewPopTop1,20)
+```
+
+
+stacked area
+```{r, eval=FALSE}
+total=matrix(c( "american",americansPopSum,
+                "german",germanPopSum,
+                "french",frenchPopSum,
+                "italian",italianPopSum, 
+                "soviet",russianPopSum,
+                "asian and latin",asianPopSum),
+               nrow=6,byrow=T)
+total=as.data.frame(total)
+test=unlist(strsplit(paste(1:175,"V",collapse="")," "))
+test=test[-1]
+test=test[-175]
+total=reshape(total,
+              varying=test, 
+              v.names="scores",
+              timevar="seasons",
+              times=test,
+              direction = "long")
+total=select(V)
+total=na.omit(total)
+#ggplot(total, aes(x=seasons,y=scores,color=V1,group=V1))+geom_area()
+#qplot(total,aes(x=seasons,y=scores,color=V1,group=V1))+geom_area()
+```
+https://www.safaribooksonline.com/library/view/r-graphics-cookbook/9781449363086/ch04.html
 
 
 ####The Rise of Women Composers
@@ -641,38 +808,6 @@ qplot(seq_along(womanPopSum),womanPopSum)+geom_line()+ylim(0,1)+geom_area(colour
 ```
 
 ```{r}
-# comp=composerBySeasonComplete[2:175]
-# test=list(rep(0, nrow(comp)))
-# for (i in 1: nrow(comp)){
-#     test[i]<- min(which(!is.na(comp[i,])))
-# }
-# test=unlist(test)
-# 
-# firstPerf=colnames(comp)[test]
-# 
-# firstPerf1=list(rep(0, nrow(comp)))
-# for (i in 1:length(firstPerf)){
-#   firstPerf1[i]=(unlist(strsplit(firstPerf[i],"\\."))[2])
-# }
-# firstPerf1=unlist(firstPerf1)
-# Name1=as.character(composerBySeasonComplete$composers)
-# compContemp=as.data.frame(cbind(Name1,firstPerf1))
-# 
-# test=merge(compContemp,dyear)
-# l=c()
-# for (i in 1:nrow(test)){
-#   if (as.numeric(test[i,2])<as.numeric(test[i,3])){
-#     l=c(l,i)
-#   }
-# }
-# contempComp=test[l,]
-# contempComp=contempComp$Name1
-# 
-# l=c()
-# for (i in 1:length(contempComp)){
-#   l=c(l,which(contempComp[i]==popScoreComposerComplete$composers))
-# }
-# contem=unique(popScoreComposerComplete[l,])
 l=c()
 for ( i in 1:length(woman1.2)){
   l=c(l,which(woman1.2[i]==contem$composers))
@@ -691,43 +826,136 @@ contemporarywomanPop=contem[l,]
 contemporarywomanPopSum=colSums(contemporarywomanPop[2:175])
 qplot(seq_along(contemporarywomanPopSum),contemporarywomanPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
 ```
+Thee graph shows the sad fact that there is not much increase in the proportion of the number of women composers over time nor the overall proportion graph nor the contemporary composers proportion graph. 
+
+
+
+###woman matching 2
+http://names.mongabay.com/female_names.htm
+robert, christian, john, MICHAEL, 
+```{r}
+
+```
+
+
+###the global impressionist trend
+I got a list of impressionist composers from WikiPedia https://en.wikipedia.org/wiki/Category:Impressionist_composers
+```{r}
+impresComp=c("Benoit, Paul","Debussy, Claude", "Fanelli, Ernest", "Hughes, Herbert", "Ravel, Maurice", "Respighi, Ottorino", "Salzedo, Carlos")
+l=c()
+for ( i in 1:length(impresComp)){
+  l=c(l,which(impresComp[i]==popScoreComposerComplete$composers))
+}
+impress=popScoreComposerComplete$composers[l]
+impressPop=popScoreComposerComplete[l,]
+impressPopSum=colSums(impressPop[2:175])
+qplot(seq_along(impressPopSum),impressPopSum)+geom_line()+geom_area(colour="black")+ scale_x_discrete(labels =(1842:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+frech impressionist painers
+https://en.wikipedia.org/wiki/Category:French_Impressionist_painters
+```{r}
+
+
+```
+
+#### art from MoMA
 
 ```{r}
-#womancomposers <- read.csv("womancomposers.csv", header = FALSE, quote = "'")
-#womenAsChar <- character(ncol(womancomposers))
-#for (i in 1:ncol(womancomposers)) {
-#  womanString <- as.character(womancomposers[1,i])
-#  if (substr(womanString, 1, 1) == " ") womanString <- substr(womanString, 2, nchar(womanString))
-#  if (substr(womanString, 1, 1) == "u") womanString <- substr(womanString, 2, nchar(womanString))
-#  womenAsChar[i] <- womanString # as.character(womancomposers[1,i])
-#}
-
-#l=c()
-#for ( i in 1:length(womenAsChar)){
-#  l=c(l,which(womenAsChar[i]==popScoreComposerComplete$composers))
-#}
-
-
-#womancom=popScoreComposerComplete[l,]
-#womancomoScore=colSums(womancom[2:175])
-#plot(womancomoScore, type = "l")
-
-#malecom=popScoreComposerComplete[-l,]
-#malecomoScore=colSums(malecom[2:175])
-#plot(malecomoScore, type = "l")
-
-#require(ggplot2)
-#qplot(seq_along(womancomoScore),womancomoScore)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1842 :2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+require(dplyr)
+MoMA=read.csv("MoMA.csv",header=TRUE,encoding = "UTF-8")
+moma.1=select(MoMA, Nationality, Date)[1:98578,]
+moma.1$Date.1=as.numeric(gsub("([0-9]+).*$", "\\1", moma.1$Date))
+moma.1=na.omit(moma.1)
+moma.1=select(moma.1,Nationality, Date.1)
+#write.csv(moma.1,"momaSmall.csv")
 ```
-The graph shows that there is not much increase in the proportion of the number of women composers over time. However, this does not show that women are not becoming more and more important in the field of classical music because there are so few of them in Baroque, classical and romantical era when nearly all composers were male. The existence of a meaningful number of women composer starts only recently. Therefore, the next step is to restrict the time-range of this comparison to wehre there is meaningful data-limit the analysis to living composers only. 
 
+```{r}
+moma.1=read.csv("momaSmall.csv",row.names=1)
+moma.1=filter(moma.1, Date.1>=1929)
+
+test=unique(moma.1$Date.1)
+
+test=sort(test)
+tyear=rep(0,length(test))
+soviet=rep(0,length(test))
+american=rep(0,length(test))
+germanAustria=rep(0,length(test))
+french=rep(0,length(test))
+italian=rep(0,length(test))
+asianLatin=rep(0,length(test))
+
+psoviet=rep(0,length(test))
+pamerican=rep(0,length(test))
+pgermanAustria=rep(0,length(test))
+pfrench=rep(0,length(test))
+pitalian=rep(0,length(test))
+pasianLatin=rep(0,length(test))
+
+for ( i in 1:length(test)){
+  tyear[i]=unlist(nrow(subset(moma.1,Date.1==test[i])))
+  american[i]=length(grep("American",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("USA",subset(moma.1,Date.1==test[i])$Nationality))
+  pamerican[i]=as.numeric(american[i])/as.numeric(tyear[i])
+  
+   soviet[i]=length(grep("Russian",subset(moma.1,Date.1==test[i])$Nationality))
+   #+length(grep("Czech",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Hungarian",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Polish",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Lithuanian",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Romanian",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Slovenian",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Ukrainian",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Bulgarian",subset(moma.1,Date.1==test[i])$Nationality))
+  psoviet[i]=as.numeric(soviet[i])/as.numeric(tyear[i])
+  
+  germanAustria[i]=length(grep("German",subset(moma.1,Date.1==test[i])$Nationality))
+  #+length(grep("Austrian",subset(moma.1,Date.1==test[i])$Nationality))
+  pgermanAustria[i]=as.numeric(germanAustria[i])/as.numeric(tyear[i])
+  
+  french[i]=length(grep("French",subset(moma.1,Date.1==test[i])$Nationality))
+  pfrench[i]=as.numeric(french[i])/as.numeric(tyear[i])
+  
+  italian[i]=length(grep("Italian",subset(moma.1,Date.1==test[i])$Nationality))
+  pitalian[i]=as.numeric(italian[i])/as.numeric(tyear[i])
+  
+   asianLatin[i]=length(grep("Chinese",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Taiwanese",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Japanese",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Indian",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Turkish",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Brazilian",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("Argentine",subset(moma.1,Date.1==test[i])$Nationality))
+  pasianLatin[i]=as.numeric(asianLatin[i])/as.numeric(tyear[i])
+}
+```
+
+```{r}
+qplot(seq_along(pamerican),pamerican)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1929:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+qplot(seq_along(pgermanAustria),pgermanAustria)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1929:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+qplot(seq_along(psoviet),psoviet)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1929:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+qplot(seq_along(pfrench),pfrench)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1929:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+qplot(seq_along(pitalian),pitalian)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1929:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+```{r}
+qplot(seq_along(pasianLatin),pasianLatin)+geom_line()+ylim(0,1)+geom_area(colour="black")+ scale_x_discrete(labels =(1929:2015))+ theme(axis.text.x = element_text(angle = 90,size=5, hjust = 1))
+```
+
+ask:
+3. underreresented countries on wiki, esp asian and latin and soviet and the art and music correspondenceness in terms of countries (asian, and latin american)
+2. woman composer matching. 
+1. stacked barchart. is it needed?
+
+4. gdp graph (strange range)
+6. (jewish exampple. x axis gone)
 
 to do:
-1. matching algorith for death year and pop score: year die>earliest work present season
+8. try dana's matching alg
+9. try new women composer matching 
 
+10. contemporary for moma esp frn
+10. asian, and latin
 
-4. gdp data
-5. french imporessionist
-6. better graph
-7. add gershwin and kate soper or not
+gershwin and kate
+global impressionist thingie
 

@@ -557,10 +557,10 @@ To compare with how NY Phil performance history reflects the change of American 
 ```{r, eval=FALSE}
 require(dplyr)
 MoMA=read.csv("MoMA.csv",header=TRUE,encoding = "UTF-8")
-moma.1=select(MoMA, Nationality, Date,Artist)[1:98578,]
+moma.1=MoMA[,c("Nationality","Date")][1:98578,]
 moma.1$Date.1=as.numeric(gsub("([0-9]+).*$", "\\1", moma.1$Date))
 moma.1=na.omit(moma.1)
-moma.1=select(moma.1,Nationality, Date.1, Artist)
+moma.1=moma.1[,c("Nationality", "Date.1")]
 write.csv(moma.1,"momaSmall.csv")
 ```
 
@@ -587,7 +587,7 @@ pitalian=rep(0,length(test))
 pasianLatin=rep(0,length(test))
 
 for ( i in 1:length(test)){
-  #tyear[i]=unlist(nrow(subset(moma.1,Date.1==test[i])))
+  tyear[i]=unlist(nrow(subset(moma.1,Date.1==test[i])))
   american[i]=length(grep("American",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("USA",subset(moma.1,Date.1==test[i])$Nationality))
   pamerican[i]=as.numeric(american[i])/as.numeric(tyear[i])
   
@@ -638,10 +638,10 @@ qplot(seq_along(pasianLatin),pasianLatin)+geom_line()+ylim(0,1)+geom_area(colour
 the graphs show that MoMA exhibition history is more sensitive to changes in US social pressures than the NY Philharmoic performance history. For example, during WWII, the exhibitions of German artists' work at MoMA are very infrequent. But later, before and after Berlin Wall fell when Americans had lots of sympathy for Germans, there is a big peak in the frequency of German artists' exhibitions. The fluctuation is smaller for the NY Phil composer-frequency data when compared with the peaks in MoMA's exhibition frequency data.  
 This might be because art, as relected by curatorial and exhibition selections, is actually more sensitive to social pressures than are choices of music to perform. Alternatively, it might because MoMA's exhibits are recent and contemporary while the NY Phil concerts include a much longer history of music and this long history somehoe dilutes the effects of social attitudes. For example, Americans did not hate German music from Beethoven's era. 
 
-### conclusion
+### Conclusion
 In this project, I studied the performance history of the NY Philharmonic and analyzed the trends of performance frequency by composer nationality and gender as a function of social attitudes derived from states of war, hostility and censorship. I also compared NY Phil performance data with MoMA exhibition data and found MoMA exhibition data to be even more sensitive to such social attitude pressures. This project tells the story of the NY Philharmonic's performance history and tries to explain how changes in its repertoire are related to changes in social attitudes in American history. This is my first attempt to bring quantitative analysis to bear on a field in the humanities. 
 
-### future work. 
+### future work
 I would like to graph some individual NY Phil performer or composer's performance history to show how he or she rose to stardom over time. Is there a steady rise in the number of performances or are there any up and downs. In addition, I'd like to study the proportion of composers whose works are performed at NY Phil during their own lifetimes. Furthur, I'd like to see if any global art and culture trends like impressionism and popularity of Ballet Russe corresponds NY Phil performance history and MoMA exhibition history. In addition, I do want to point out that in this research I am relying on internet sources esepcially Wikipedia pages for composers' personal information. I believe that crowd intelligence can be reliable, but because these are not authorized sources, there must be some mistakes in the content. I caught some of them and corrected them by hand, but there might be some other faults in the sources which I did not catch. If I have more time and the resouces, I'd do the same study trying from authenticated sources for composers' nationalities and women gender and compare it with my study based on wikipeida pages, which can be a way to see how reliable crowd intelligence is. 
 
 ### Achnolwegement

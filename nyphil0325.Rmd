@@ -718,8 +718,16 @@ for ( i in 1:length(jew1.2)){
 jew=popScoreComposerComplete$composers[l]
 jewPop=popScoreComposerComplete[l,]
 jewPopSum=colSums(jewPop[2:175])
-qplot(seq_along(jewPopSum),jewPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+  theme(axis.text.x = element_text(angle = 45,size=5, hjust = 1))+scale_x_discrete(labels=seq(1842,2015,by=2))
+
+qplot(seq_along(jewPopSum),jewPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+  theme(axis.text.x = element_text(angle = 45,size=5, hjust = 1))+
+scale_x_continuous(breaks=c(70,120,170), labels=c("two", "five", "eight"))
+
+
+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))
+
+
 ```
+
 
 
 ```{r}
@@ -762,16 +770,20 @@ total=as.data.frame(total)
 test=unlist(strsplit(paste(1:175,"V",collapse="")," "))
 test=test[-1]
 test=test[-175]
-total=reshape(total,
+
+total1=reshape(total,
               varying=test, 
               v.names="scores",
               timevar="seasons",
               times=test,
               direction = "long")
-total=select(V)
-total=na.omit(total)
-#ggplot(total, aes(x=seasons,y=scores,color=V1,group=V1))+geom_area()
-#qplot(total,aes(x=seasons,y=scores,color=V1,group=V1))+geom_area()
+total1$seasons=strsplit(total1$seasons,"")
+total1$seasons=total1$seasons[2]
+
+total1$t=seq(1:nrow(total1))
+
+total1=na.omit(total1)
+ggplot(total1, aes(x=t,y=scores,fill=as.factor(V1)))+geom_area()
 ```
 https://www.safaribooksonline.com/library/view/r-graphics-cookbook/9781449363086/ch04.html
 
@@ -861,14 +873,14 @@ https://en.wikipedia.org/wiki/Category:French_Impressionist_painters
 
 #### art from MoMA
 
-```{r}
+```{r, eval=FALSE}
 require(dplyr)
 MoMA=read.csv("MoMA.csv",header=TRUE,encoding = "UTF-8")
 moma.1=select(MoMA, Nationality, Date)[1:98578,]
 moma.1$Date.1=as.numeric(gsub("([0-9]+).*$", "\\1", moma.1$Date))
 moma.1=na.omit(moma.1)
 moma.1=select(moma.1,Nationality, Date.1)
-#write.csv(moma.1,"momaSmall.csv")
+write.csv(moma.1,"momaSmall.csv")
 ```
 
 ```{r}
@@ -959,3 +971,8 @@ to do:
 gershwin and kate
 global impressionist thingie
 
+
+
+
+nyphil #concert nor proportin of contemporary composers don't have much to do with the US GDP, but it is determined by its own financial situation.
+financial difficulty in 19th century, merging during 1900-1930 (explain why the number of concert increases and contemporary composers proportion increases)

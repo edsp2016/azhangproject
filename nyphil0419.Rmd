@@ -1,0 +1,648 @@
+---
+title: "Reflections on NY Phil -- The NY Phil as a lens on changes in US society"
+output: html_document
+---
+Around the turn of the century, New York City became the arts center of the world. Its establishment not only encouraged the flourishing of American musicians but also attracted musicians from all over the world to NYC. NY Philharmonic as an important art and culture institution, reflects the social and economic changes of the United States society over time. In this study I focus on NY Philharmonic data from three perspectives: 1. the nationality of composers whose works are performed by NY Philharmonic in relation to the political enviroments of the US; 2. the status of women composers over time; 3. the elasticity of an art and culture institute's reaction to social issues by comparing NY Phil performance data and MoMA exhibition data. 
+
+###1. Getting data from NY Philharmonic's github page
+First of all, I read the XML file from NY Philharmonic's github page (https://github.com/nyphilarchive/PerformanceHistory/blob/master/Programs/complete.xml) and found the number of every composers whose work was performed for all seasons and put them in a table. 
+```{r, eval=FALSE}
+require("XML")
+require(mosaic)
+xmlfile <- xmlParse("complete.xml",encoding="UTF-8")
+rootnode = xmlRoot(xmlfile) #gives content of root
+
+incrementComp <- function(composer_stats, c, season){
+  if (is.null(composer_stats[c, season])) {
+    composer_stats[c, season] <- 1
+  } else if (is.na(composer_stats[c,season])) {
+    composer_stats[c, season] <- 1
+  } else {
+    composer_stats[c, season] <- composer_stats[c, season] + 1
+  }
+  return(composer_stats)
+}
+
+composerBySeasonComplete <- data.frame()
+for (seas in 1:xmlSize(rootnode)) {
+  # DEBUG: cat(seas, "\n")
+  firstlist <- xmlToList(rootnode[[seas]])
+  season <- firstlist$season
+  season <- paste("Season",season,sep=".")
+  works <- firstlist$worksInfo
+  if (is.list(works)) {     # sometimes works is actually empty
+      for (i in 1:length(works)) {
+        if (!is.null(works[[i]]$composerName)) {    #sometimes there is no composer
+          composerBySeasonComplete <- incrementComp(composerBySeasonComplete, works[[i]]$composerName,season)
+        }
+      }
+    }
+}
+colnames(composerBySeasonComplete)[1]="composers"
+write.csv(composerBySeasonComplete, "composerBySeasonComplete.csv")
+```
+
+the cleaned data look like:
+```{r}
+composerBySeasonComplete <- read.csv("composerBySeasonComplete.csv", row.names=1, encoding="UTF-8")
+composerBySeasonComplete[1:5,1:5]
+```
+
+To get a general sense of the data, I ordered composers by the number of works performed in descending order. 
+```{r}
+SumComp=rowSums(composerBySeasonComplete[2:175],na.rm=TRUE)
+SumComp=cbind(composerBySeasonComplete[1],SumComp)
+SumComp1=SumComp[order(-SumComp$SumComp),]
+```
+
+The following graph shows that most of the composers' works got performed fewer than ten times, and only 16 composers' works are performed more than 1000 times. Therefore, I expect the composers to be diverse. 
+```{r}
+require(mosaic)
+nrow(SumComp1)
+hist(SumComp1$SumComp,main="number of performance histogram",xlab="number of performance")
+
+comp1000=subset(SumComp1,SumComp>=1000)
+nrow(comp1000)
+comp1000
+
+compl1000=subset(SumComp1,SumComp<=10)
+nrow(compl1000)
+hist(compl1000$SumComp,main="number of performance histogram",xlab="number of performance")
+```
+
+
+### 2. Number of Performance per year and economics
+Graph of number of performance per year
+```{r}
+SumSeas=colSums(composerBySeasonComplete[2:175],na.rm=TRUE)
+require(ggplot2)
+qplot(seq_along(as.double(SumSeas)),as.double(SumSeas))+geom_line()+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("number of performance")
+```
+GDP anuual rate of change
+http://www.multpl.com/us-gdp-growth-rate
+
+According to Marx, economics base determines the superstructure of the society, which is reflected as the economic development level determines the politics, art and culture activity of a society. Originally, I was thinking of studying the relationship between the number of contemporary composers' works performed at NY Philharmonic and the GDP growth rate to see how the number of contemporary composers work performed reflects society's emphasis on art and music education. But the list of composers' birth and death year is incomplete. Therefore I cannot determine which composers are alive at the time their works are performed by the NY Phil. Thus in order to see the relationship between US economic development and NY Phil performances, I decided to study the relationship between the number of concerts in each season and US GDP growth rate. The graph shows that GDP growth rate and performance don't have similar patterns. However, from a micro perspective, the number of performance per year reflects the NY Phil's own economic condition. For example, the boom of the number of performance at the beginning of the twentieth century is explained by recognizing that several orchestras merged. 
+
+### 3.Normalized Performance Frequency Score
+Because the number of performance change year by year, I computed a "Normalized Performance Frequency Score" to normalize by total number of performances. I got the normalized performance frequency score by dividing the number of performances for each composers in each season by the total number of performance in each season.
+
+```{r,eval=FALSE}
+require(base)
+composerBySeasonComplete[is.na(composerBySeasonComplete)] <- 0
+composerBySeasonComplete1=composerBySeasonComplete[2:175]
+composerBySeasonComplete2=composerBySeasonComplete[1]
+popScoreComposerComplete=data.frame()
+totalNumConcert=colSums(composerBySeasonComplete1, na.rm=TRUE)
+for ( i in 1:2652){
+  popScoreComposerComplete[i,]=composerBySeasonComplete1[i,]/totalNumConcert
+  i=i+1
+}
+popScoreComposerComplete=cbind(composerBySeasonComplete2,popScoreComposerComplete)
+write.csv(popScoreComposerComplete,"popScoreComposerComplete.csv")
+```
+
+the Normalized Performance Frequency Score table looks like:
+```{r}
+#popScoreComposerComplete <- read.csv("~/GitHub/azhangproject/popScoreComposerComplete.csv", row.names=1, encoding="UTF-8")
+popScoreComposerComplete <- read.csv("popScoreComposerComplete.csv", row.names=1, encoding="UTF-8")
+popScoreComposerComplete[1:5,1:5]
+```
+
+the top twenty list in the normalized performance frequency score table does not differ much from the composers by season table. 
+```{r}
+popScoreSumComp=rowSums(popScoreComposerComplete[2:175],na.rm=TRUE)
+popScoreSumComp=cbind(popScoreComposerComplete[1],popScoreSumComp)
+popScoreSumComp1=popScoreSumComp[order(-popScoreSumComp$popScoreSumComp),]
+head(popScoreSumComp1,20)
+```
+
+
+```{r}
+require(stringr)
+popScoreComposerComplete$composers=str_replace_all(popScoreComposerComplete$composers,"[^[:graph:]]", " ") 
+popScoreComposerComplete$composers=gsub("  ", " ", popScoreComposerComplete$composers, fixed = TRUE)
+
+composerBySeasonComplete$composers=str_replace_all(composerBySeasonComplete$composers,"[^[:graph:]]", " ") 
+composerBySeasonComplete$composers=gsub("  ", " ", composerBySeasonComplete$composers, fixed = TRUE)
+```
+
+
+### 4.Composer Nationalities and Politics and Economy 
+art and politics can affect each other. In this part, I want to ask several questions:  
+1. As NYC rise to be the center of art and culture, does the number of American composers' works increase?   
+2. Does the number of German composers' work decrease during WWI and WwII?  
+3. Does the number of Russian composers' work decrease during the cold war?   
+4. As the economy rises in Asian and Latin American countries, does the number of works from these areas increase over time? 
+
+To do this we need to identify the nationality of composers whose works are performed by the NY Philharmic. The NY Philharmonic data do not have the nationalities of composers. Therefore, I scraped wikipedia page and got data  on composers' nationalities.
+I got the most of the composers nationality scores by scraping this page and the links in the page: (https://en.wikipedia.org/wiki/Category:Classical_composers_by_nationality) using the following python code
+```{r}
+require(png)
+require(grid)
+img02 <- readPNG("2016-03-26b.png")
+grid.raster(img02)
+```
+
+However, some pages, for example the American composer page (https://en.wikipedia.org/w/index.php?title=Category:American_classical_composers) has multiple pages, and it is hard to go through every page in my code. So I scraped every page by clicking by hand and rbind them together in R
+
+```{r}
+img03 <- readPNG("scrapeNationality2.png")
+grid.raster(img03)
+```
+
+Because there are many names that are written in different languages that don't match easily to listings in the NY Phil record and wikipedia pages. I adapted a matching algorithm online to match names on Wikipedia page and NY Phil record. (http://www.r-bloggers.com/merging-data-sets-based-on-partially-matched-data-elements/)
+```{r}
+signature=function(x){
+  sig=paste(sort(unlist(strsplit(tolower(x)," "))),collapse='')
+  return(sig)
+}
+ 
+partialMatch=function(x,y,levDist=0.01){
+  xx=data.frame(sig=sapply(x, signature),row.names=NULL)
+  yy=data.frame(sig=sapply(y, signature),row.names=NULL)
+  xx$raw=x
+  yy$raw=y
+  xx=subset(xx,subset=(sig!=''))
+  xy=merge(xx,yy,by='sig',all=T)
+  matched=subset(xy,subset=(!(is.na(raw.x)) & !(is.na(raw.y))))
+  matched$pass="Duplicate"
+  todo=subset(xy,subset=(is.na(raw.y)),select=c(sig,raw.x))
+  colnames(todo)=c('sig','raw')
+  todo$partials= as.character(sapply(todo$sig, agrep, yy$sig,max.distance = levDist,value=T))
+  todo=merge(todo,yy,by.x='partials',by.y='sig')
+  partial.matched=subset(todo,subset=(!(is.na(raw.x)) & !(is.na(raw.y))),select=c("sig","raw.x","raw.y"))
+  partial.matched$pass="Partial"
+  matched=rbind(matched,partial.matched)
+  un.matched=subset(todo,subset=(is.na(raw.x)),select=c("sig","raw.x","raw.y"))
+  if (nrow(un.matched)>0){
+    un.matched$pass="Unmatched"
+    matched=rbind(matched,un.matched)
+  }
+  matched=subset(matched,select=c("raw.x","raw.y","pass"))
+ 
+  return(matched)
+}
+
+```
+
+####American.
+I stacked the data from multiple pages, cleaned them and matched them with the normalized performance frequency score table and computed the proportion of the number of American composers whose works are performed by the NY Philharmonic over total number of works performed by the NY Philharmonic over time.
+
+```{r}
+american1=read.csv("americantest1.csv", header = FALSE ,encoding = "UTF-8")
+american2=read.csv("americantest2.csv", header = FALSE ,encoding = "UTF-8")
+american3=read.csv("americantest3.csv", header = FALSE ,encoding = "UTF-8")
+american4=read.csv("americantest4.csv", header = FALSE ,encoding = "UTF-8")
+american5=read.csv("americantest5.csv", header = FALSE ,encoding = "UTF-8")
+american6=read.csv("americantest6.csv", header = FALSE ,encoding = "UTF-8")
+american7=read.csv("americantest7.csv", header = FALSE ,encoding = "UTF-8")
+american=c(american1,american2,american3,american4,american5,american6,american7)
+american=unique(unlist(american))
+
+american1.0=gsub("\\(composer)|\\(pianist)|\\(conductor)|\\(guitarist)|\\(musician)|\\ (musicologist)|\\(singer-songwriter)|\\ (Fluxus musician)","",american)
+american1.1=strsplit(as.character(american1.0)," ")
+
+american1.2=list(rep(0,length(american1.1)))
+for ( i in 1:length(american1.1)){
+  if (length(american1.1[[i]])>1)
+    american1.2[i]=paste(american1.1[[i]][length(american1.1[[i]])],paste(american1.1[[i]][1:length(american1.1[[i]])-1], collapse=" "),sep=", ")
+}
+american1.2=american1.2[!is.na(american1.2)]
+american1.4=unlist(american1.2)
+american1.4=c(american1.4,"Gershwin, George")
+american1.4=c(american1.4,"Bernstein, Leonard")
+american1.4=c(american1.4,"Foote, Arthur")
+require(ggplot2)
+
+l=list(rep(0, length(american1.4)))
+l=c()
+for ( i in 1:length(american1.4)){
+  l=c(l,which(american1.4[i]==popScoreComposerComplete$composers))
+}
+americans=popScoreComposerComplete$composers[l]
+americansPop=popScoreComposerComplete[l,]
+americansPopSum=colSums(americansPop[2:175])
+qplot(seq_along(americansPopSum),americansPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("percentage of works being performed")+ggtitle("American Composers")
+```
+The graph shows a general increase of the proportion of the number of American composers over total number of composers over time which reinforces the hypothesis that as America rise to become the center of the art and culture of the world during the turn of the century its composers got more recognitions by the NY Philharmonic.
+
+The top twenty American composers are
+```{r}
+americanTop=rowSums(americansPop[2:175],na.rm=TRUE)
+americanTop=cbind(as.data.frame(americans)[1],americanTop)
+americanTop1=americanTop[order(-americanTop$americanTop),]
+head(americanTop1,20)
+```
+
+####Germany 
+```{r, eval=FALSE}
+german1=read.csv("germantest1.csv", header = FALSE ,encoding = "UTF-8")
+german2=read.csv("germantest2.csv", header = FALSE ,encoding = "UTF-8")
+german3=read.csv("germantest3.csv", header = FALSE ,encoding = "UTF-8")
+german4=read.csv("germantest4.csv", header = FALSE ,encoding = "UTF-8")
+german5=read.csv("germantest5.csv", header = FALSE ,encoding = "UTF-8")
+
+
+german=c(german1,german2,german3,german4,german5)
+german=unique(unlist(german))
+german1.0=gsub("\\(composer)","",german)
+german1.0=gsub("\\(baroque composer)","",german1.0)
+german1.0=gsub("\\(Altstadt Kantor)","",german1.0)
+german1.0=gsub("\\(Morean)","",german1.0)
+german1.0=gsub("\\(1772???1806)","",german1.0)
+german1.0=gsub("\\(conductor)","",german1.0)
+german1.0=gsub("\\(the elder)","",german1.0)
+german1.0=gsub("\\(the younger)","",german1.0)
+german1.0=gsub("\\(musician)","",german1.0)
+german1.0=gsub("\\(organist)","",german1.0)
+german1.0=gsub("\\(guitarist)","",german1.0)
+german1.0=gsub("\\(musician at Arnstadt)","",german1.0)
+german1.0=gsub("\\(Austrian composer)","",german1.0)
+german1.1=strsplit(as.character(german1.0)," ")
+
+german1.2=list(rep(0,length(german1.1)))
+for ( i in 1:length(german1.1)){
+  if (length(german1.1[[i]])>1){
+    german1.2[i]=paste(german1.1[[i]][length(german1.1[[i]])],paste(german1.1[[i]][1:length(german1.1[[i]])-1], collapse=" "),sep=", ")
+  }
+}
+german1.2=german1.2[!is.na(german1.2)]
+
+test2=partialMatch(popScoreComposerComplete$composers,german1.2)
+test3=test2[-c(126,130,142,141,138),]
+german1.3=test3$raw.x
+save(german1.3,file="germanComps.RData")
+```
+
+```{r}
+load("germanComps.RData")
+
+l=c()
+for ( i in 1:length(german1.3)){
+  l=c(l,which(german1.3[i]==popScoreComposerComplete$composers))
+}
+german=popScoreComposerComplete$composers[l]
+germanPop=popScoreComposerComplete[l,]
+germanPopSum=colSums(germanPop[2:175])
+qplot(seq_along(germanPopSum),germanPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("percentage of works being performed")+ggtitle("German Composers")
+```
+the graph shows a significant decrease in the proportion of German composers' works being performed during WWI and WWII and after WWII. 
+
+```{r}
+germanTop=rowSums(germanPop[2:175],na.rm=TRUE)
+germanTop=cbind(as.data.frame(german)[1],germanTop)
+germanTop1=germanTop[order(-germanTop$germanTop),]
+head(germanTop1,20)
+```
+ 
+
+#####Wagner
+```{r}
+wagner=as.numeric(popScoreComposerComplete[81,2:175])
+qplot(seq_along(wagner),wagner)+geom_line()+ylim(0,1)+geom_area(colour="black")+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("percentage of works being performed")+ggtitle("Wagner")
+```
+The graph shows that the normalized performance frequency score of Hitler's favorite composer, Wagner, significantly decreased after WWII.
+
+#### Russian 
+```{r, eval=FALSE}
+russian1=read.csv("russiantest1.csv", header = FALSE ,encoding = "UTF-8")
+russian2=read.csv("russiantest2.csv", header = FALSE ,encoding = "UTF-8")
+russian=c(russian1,russian2) 
+russian=unique(unlist(russian))
+
+russian1.0=gsub("\\(composer)","",russian)
+russian1.0=gsub("\\(conductor)","",russian1.0)
+russian1.1=strsplit(as.character(russian1.0)," ")
+
+russian1.2=list(rep(0,length(russian1.1)))
+for ( i in 1:length(russian1.1)){
+  if (length(russian1.1[[i]])>1)
+    russian1.2[i]=paste(russian1.1[[i]][length(russian1.1[[i]])],paste(russian1.1[[i]][1:length(russian1.1[[i]])-1], collapse=" "),sep=", ")
+}
+russian1.2=russian1.2[!is.na(russian1.2)]
+
+test2=partialMatch(popScoreComposerComplete$composers,russian1.2)
+test3=test2[-c(38,35,33,29),]
+russian1.3=test3$raw.x
+save(russian1.3,file="russianComps.RData")
+```
+
+```{r}
+load("russianComps.RData")
+l=c()
+for ( i in 1:length(russian1.3)){
+  l=c(l,which(russian1.3[i]==popScoreComposerComplete$composers))
+}
+
+russian=popScoreComposerComplete$composers[l]
+russianPop=popScoreComposerComplete[l,]
+russianPopSum=colSums(russianPop[2:175])
+qplot(seq_along(russianPopSum),russianPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("percentage of works being performed")+ggtitle("Russian Composers")
+```
+
+```{r}
+russianTop=rowSums(russianPop[2:175],na.rm=TRUE)
+russianTop=cbind(as.data.frame(russian)[1],russianTop)
+russianTop1=russianTop[order(-russianTop$russianTop),]
+head(russianTop1,20)
+```
+
+The graph shows that there is an increase in normalized performance frequency score of Russian composers after WWII during the cold war, probably because many important Russian composers rise during that time. This shows that the cold war did not affect the introduction of Russian music to the US.  
+
+In conclusion, overt war and internal censorship may affect cultural performances and people's attitudes toward music, but vaguer antipathy, as in the Cold War, may not influence the frequency of cultural performances. This is reflected on the choice of NY Phil reportories. During the culture revolution in China, Western art works are strictly prohibited. Censorship affected Chinese music and art institutions' reportorie choice. Comparing China to the United States, it suggests that, in a democratic society, attitudes and censureship somestimes do not affect art and culture performance much which is shown by the proportion of Russian works being performed increasing during the cold war. However, during actual wartime attitudes do affect art and culture performances, which is shown by the proportion of German composers' performances diminishing during and after the war years. 
+
+#### Chinese
+In order to see how the economic rise of Asia and Latin American countries affect the performance history at NY Phil, I needed to come up with a coherent list of Asian and Latin American composers. But I could not find these data. Instead, I used China as a single-country sample to see how the performance trends change over time as the economy of China rose. 
+
+In order to do that, I find a list of common Chinese last names and mathced it with composers' last names. This matching algorithm finds every composers with Chinese ethnitiy rather than with actual Chinese nationality. 
+```{r, eval=FALSE}
+url <- 'http://www.bloomberg.com/visual-data/best-and-worst//most-common-in-china-surnames'
+html <- read_html(url, encoding = "UTF-8")
+tables <- html_table(html, fill=TRUE)
+tables=tables[[1]]
+lastNames=tables["Pinyin annotation"]
+ChineseLname=unlist(lastNames$`Pinyin annotation`)
+ChineseLname[73]="Dun"
+save(ChineseLname,file="ChineseLastName.RData")
+```
+
+```{r}
+load("ChineseLastName.RData")
+splitname=strsplit(popScoreComposerComplete$composers,",")
+lname=c()
+for ( i in 1:length(splitname)){
+  lname=c(lname,splitname[[i]][1])
+}
+
+l=c()
+for ( i in 1:length(ChineseLname)){
+   l=c(l,which(ChineseLname[i]==lname))
+}
+
+asianPop=popScoreComposerComplete[l,]
+nrow(asianPop)
+nrow(asianPop)/nrow(popScoreComposerComplete)
+
+asianTop=rowSums(asianPop[2:175],na.rm=TRUE)
+asianTop=cbind(as.data.frame(asianPop)[1],asianTop)
+asianTop1=asianTop[order(-asianTop$asianTop),]
+head(unique(asianTop1),20)
+
+asian=popScoreComposerComplete$composers[l]
+asianPop=popScoreComposerComplete[l,]
+asianPopSum=colSums(asianPop[2:175])
+qplot(seq_along(asianPopSum),asianPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("percentage of works being performed")+ggtitle("Chinese Composers")
+```
+The graph shows that as the economy of China rose, the proportion of Chinese composers' works being performed did not increase significantly over time. I expect the reason to be not only are there not many Chinese composeres but also there are culture communication barriers between China and the United States. As the economy of China develops, there are more and more Chinese musicians as more money and effort is put into music and art education. However, most of them are performers rather than composers. Western music and western music education was introduced to China only after the beginning of the twentieth century, so the history of western music is still relatively short in China. In addition, during the culture revolution, China was again isolated from the rest of the world. Therefore, even though there are good Chinese composers, their works are not introduced to the US. 
+
+####French
+I also did French and Italian composers performance hisotry graphs over time in order to compare them with MoMA exhibition history data. 
+```{r, eval=FALSE}
+french1=read.csv("frenchtest1.csv", header = FALSE ,encoding = "UTF-8")
+french2=read.csv("frenchtest2.csv", header = FALSE ,encoding = "UTF-8")
+french3=read.csv("frenchtest3.csv", header = FALSE ,encoding = "UTF-8")
+french4=read.csv("frenchtest4.csv", header = FALSE ,encoding = "UTF-8")
+french=c(french1,french2,french3,french4)
+french=unique(unlist(french))
+
+french1.0=gsub("\\(composer)","",french)
+french1.0=gsub("\\(conductor)","",french1.0)
+french1.0=gsub("\\(1907???1970)","",french1.0)
+french1.0=gsub("\\(organist)","",french1.0)
+french1.0=gsub("\\(violist)","",french1.0)
+french1.0=gsub("\\(musician) ","",french1.0)
+french1.0=gsub("\\(Chantilly Codex composer) ","",french1.0)
+french1.0=gsub("\\(lutenist)  ","",french1.0)
+french1.1=strsplit(as.character(french1.0)," ")
+
+french1.2=list(rep(0,length(french1.1)))
+for ( i in 1:length(french1.1)){
+  if (length(french1.1[[i]])>1)
+    french1.2[i]=paste(french1.1[[i]][length(french1.1[[i]])],paste(french1.1[[i]][1:length(french1.1[[i]])-1], collapse=" "),sep=", ")
+}
+french1.2=french1.2[!is.na(french1.2)]
+
+test2=partialMatch(popScoreComposerComplete$composers,french1.2)
+test3=test2[-c(95,98,90,82,83,86,87,88,90),]
+french1.3=test3$raw.x
+save(french1.3,file="frenchComps.RData")
+```
+
+```{r}
+load("frenchComps.RData")
+l=c()
+for ( i in 1:length(french1.3)){
+  l=c(l,which(french1.3[i]==popScoreComposerComplete$composers))
+}
+
+french=popScoreComposerComplete$composers[l]
+frenchPop=popScoreComposerComplete[l,]
+frenchPopSum=colSums(frenchPop[2:175])
+qplot(seq_along(frenchPopSum),frenchPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("percentage of works being performed")+ggtitle("French Composers")
+```
+
+```{r}
+frenchTop=rowSums(frenchPop[2:175],na.rm=TRUE)
+frenchTop=cbind(as.data.frame(french)[1],frenchTop)
+frenchTop1=frenchTop[order(-frenchTop$frenchTop),]
+head(frenchTop1,20)
+```
+
+####Italian
+```{r,eval=FALSE}
+itallian1=read.csv("italiantest1.csv", header = FALSE ,encoding = "UTF-8")
+itallian2=read.csv("italiantest2.csv", header = FALSE ,encoding = "UTF-8")
+itallian3=read.csv("italiantest3.csv", header = FALSE ,encoding = "UTF-8")
+itallian4=read.csv("italiantest4.csv", header = FALSE ,encoding = "UTF-8")
+itallian5=read.csv("italiantest5.csv", header = FALSE ,encoding = "UTF-8")
+italian=c(itallian1,itallian2,itallian3,itallian4,itallian5)
+italian=unique(unlist(italian))
+
+italian1.0=gsub("\\(composer)","",italian)
+italian1.0=gsub("\\(conductor)","",italian1.0)
+italian1.0=gsub("\\(classical era composer)","",italian1.0)
+italian1.0=gsub("\\ (senior)","",italian1.0)
+italian1.1=strsplit(as.character(italian1.0)," ")
+
+italian1.2=list(rep(0,length(italian1.1)))
+for ( i in 1:length(italian1.1)){
+  if (length(italian1.1[[i]])>1)
+    italian1.2[i]=paste(italian1.1[[i]][length(italian1.1[[i]])],paste(italian1.1[[i]][1:length(italian1.1[[i]])-1], collapse=" "),sep=", ")
+}
+italian1.2=italian1.2[!is.na(italian1.2)]
+
+test2=partialMatch(popScoreComposerComplete$composers,italian1.2)
+test3=test2[-c(115,114,108,107),]
+italian1.3=test3$raw.x
+save(italian1.3,file="italianComps.RData")
+```
+
+```{r}
+load("italianComps.RData")
+
+l=c()
+for ( i in 1:length(italian1.3)){
+  l=c(l,which(italian1.3[i]==popScoreComposerComplete$composers))
+}
+
+italian=popScoreComposerComplete$composers[l]
+italianPop=popScoreComposerComplete[l,]
+italianPopSum=colSums(italianPop[2:175])
+qplot(seq_along(italianPopSum),italianPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("percentage of works being performed")+ggtitle("Italian Composers")
+```
+
+```{r}
+italianTop=rowSums(italianPop[2:175],na.rm=TRUE)
+italianTop=cbind(as.data.frame(italian)[1],italianTop)
+italianTop1=italianTop[order(-italianTop$italianTop),]
+head(italianTop1,20)
+```
+
+
+####The status of Women Composers
+The feminist movements accelerated in 1960s. It first starts in political and economic equality between men and women, and spread to the culture sectors. Can we find this reflected in NY Phil performance data?
+
+I cannot find a comprehensive list of woman composers in the world. I took American composer as a smaple and examined the proportion of American womem composers' work being performed over time by NY Phil. To do this, I scraped this page (http://names.mongabay.com/female_names.htm) and got a list of common American female first names and matched them with the NY Phil record. 
+```{r,eval=FALSE}
+url <- 'http://names.mongabay.com/female_names.htm'
+html <- read_html(url, encoding = "UTF-8")
+tables <- html_table(html, fill=TRUE)
+tables=tables[[1]]
+femalename=tables[1]
+femalename=femalename[1:500,]
+femalenames=tolower(femalename)
+save(femalenames,file="femalenames.RData")
+```
+
+```{r}
+load("femalenames.RData")
+names=americansPop[1]$composers
+splitName2=strsplit(names,",")
+fname=c()
+for (i in 1:length(splitName2)){
+  fname=c(fname,splitName2[[i]][2])
+}
+fname=tolower(fname)
+fname=trimws(fname)
+fname3=strsplit(fname," ")
+fname4=c()
+for (i in 1: length(fname3)){
+  fname4=c(fname4,fname3[[i]][1])
+}
+
+
+l=c()
+for ( i in 1:length(femalenames)){
+   l=c(l,which(femalenames[i]==fname4))
+}
+
+woman=americansPop[l,1]
+woman
+
+womanTrue=woman[-c(8,15,16,19,22)]
+womanTrue
+
+length(womanTrue)/nrow(americansPop)
+
+womanPop=americansPop[l,]
+womanPop=womanPop[-c(8,15,16,19,22),]
+womanPopSum=colSums(womanPop[2:175])
+qplot(seq_along(womanPopSum),womanPopSum)+geom_line()+ylim(0,1)+geom_area(colour="black")+scale_x_continuous(breaks=seq(1,175,10),labels=c("1842","1852","1862","1872","1882","1892","1902","1912","1922","1932","1942","1952","1962","1972","1982","1992","2002","2012"))+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+xlab("seasons")+ylab("percentage of works being performed")+ggtitle("Americna Women Composers")
+```
+There are also some gender neutral names in the female first name list. Thus, some of the people in the list could be male. I removed them by hand. The graph shows that as time changes, the proportion of women composers' works being performed did not increase significantly over time, which reflects the sad situation of women in classical music. 
+
+
+#### Art from MoMA
+To compare with how NY Phil performance history reflects the change of American society, I decide to do a series of MoMA exhibition history graphs by country. 
+```{r, eval=FALSE}
+require(dplyr)
+MoMA=read.csv("MoMA.csv",header=TRUE,encoding = "UTF-8")
+moma.1=select(MoMA, Nationality, Date,Artist)[1:98578,]
+moma.1$Date.1=as.numeric(gsub("([0-9]+).*$", "\\1", moma.1$Date))
+moma.1=na.omit(moma.1)
+moma.1=select(moma.1,Nationality, Date.1, Artist)
+write.csv(moma.1,"momaSmall.csv")
+```
+
+```{r}
+moma.1=read.csv("momaSmall.csv",row.names=1)
+moma.1=subset(moma.1, Date.1>=1929)
+
+test=unique(moma.1$Date.1)
+
+test=sort(test)
+tyear=rep(0,length(test))
+soviet=rep(0,length(test))
+american=rep(0,length(test))
+germanAustria=rep(0,length(test))
+french=rep(0,length(test))
+italian=rep(0,length(test))
+asianLatin=rep(0,length(test))
+
+psoviet=rep(0,length(test))
+pamerican=rep(0,length(test))
+pgermanAustria=rep(0,length(test))
+pfrench=rep(0,length(test))
+pitalian=rep(0,length(test))
+pasianLatin=rep(0,length(test))
+
+for ( i in 1:length(test)){
+  #tyear[i]=unlist(nrow(subset(moma.1,Date.1==test[i])))
+  american[i]=length(grep("American",subset(moma.1,Date.1==test[i])$Nationality))+length(grep("USA",subset(moma.1,Date.1==test[i])$Nationality))
+  pamerican[i]=as.numeric(american[i])/as.numeric(tyear[i])
+  
+   soviet[i]=length(grep("Russian",subset(moma.1,Date.1==test[i])$Nationality))
+  psoviet[i]=as.numeric(soviet[i])/as.numeric(tyear[i])
+  
+  germanAustria[i]=length(grep("German",subset(moma.1,Date.1==test[i])$Nationality))
+
+  pgermanAustria[i]=as.numeric(germanAustria[i])/as.numeric(tyear[i])
+  
+  french[i]=length(grep("French",subset(moma.1,Date.1==test[i])$Nationality))
+  pfrench[i]=as.numeric(french[i])/as.numeric(tyear[i])
+  
+  italian[i]=length(grep("Italian",subset(moma.1,Date.1==test[i])$Nationality))
+  pitalian[i]=as.numeric(italian[i])/as.numeric(tyear[i])
+  
+   asianLatin[i]=length(grep("Chinese",subset(moma.1,Date.1==test[i])$Nationality))
+  pasianLatin[i]=as.numeric(asianLatin[i])/as.numeric(tyear[i])
+}
+```
+
+```{r}
+qplot(seq_along(pamerican),pamerican)+geom_line()+ylim(0,1)+geom_area(colour="black")+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+scale_x_continuous(breaks=seq(1,90,by=10),labels=c("1929","1939","1949","1959","1969","1979","1989","1999","2009"))+xlab("years")+ylab("percentage of works being exhibited")+ggtitle("American Artists")
+```
+
+```{r}
+qplot(seq_along(pgermanAustria),pgermanAustria)+geom_line()+ylim(0,1)+geom_area(colour="black")+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+scale_x_continuous(breaks=seq(1,90,by=10),labels=c("1929","1939","1949","1959","1969","1979","1989","1999","2009"))+xlab("years")+ylab("percentage of works being exhibited")+ggtitle("German Artists")
+```
+
+```{r}
+qplot(seq_along(psoviet),psoviet)+geom_line()+ylim(0,1)+geom_area(colour="black")+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+scale_x_continuous(breaks=seq(1,90,by=10),labels=c("1929","1939","1949","1959","1969","1979","1989","1999","2009"))+xlab("years")+ylab("percentage of works being exhibited")+ggtitle("Russian Artists")
+```
+
+```{r}
+qplot(seq_along(pfrench),pfrench)+geom_line()+ylim(0,1)+geom_area(colour="black")+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+scale_x_continuous(breaks=seq(1,90,by=10),labels=c("1929","1939","1949","1959","1969","1979","1989","1999","2009"))+xlab("years")+ylab("percentage of works being exhibited")+ggtitle("French Artists")
+```
+
+```{r}
+qplot(seq_along(pitalian),pitalian)+geom_line()+ylim(0,1)+geom_area(colour="black")+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+scale_x_continuous(breaks=seq(1,90,by=10),labels=c("1929","1939","1949","1959","1969","1979","1989","1999","2009"))+xlab("years")+ylab("percentage of works being exhibited")+ggtitle("Italian Artists")
+```
+
+```{r}
+sum(asianLatin)
+sum(asianLatin)/nrow(moma.1)
+qplot(seq_along(pasianLatin),pasianLatin)+geom_line()+ylim(0,1)+geom_area(colour="black")+ theme(axis.text.x = element_text(angle = 45,size=10, hjust = 1))+scale_x_continuous(breaks=seq(1,90,by=10),labels=c("1929","1939","1949","1959","1969","1979","1989","1999","2009"))+xlab("years")+ylab("percentage of works being exhibited")+ggtitle("Chinese Artists")
+```
+
+the graphs show that MoMA exhibition history is more sensitive to changes in US social pressures than the NY Philharmoic performance history. For example, during WWII, the exhibitions of German artists' work at MoMA are very infrequent. But later, before and after Berlin Wall fell when Americans had lots of sympathy for Germans, there is a big peak in the frequency of German artists' exhibitions. The fluctuation is smaller for the NY Phil composer-frequency data when compared with the peaks in MoMA's exhibition frequency data.  
+This might be because art, as relected by curatorial and exhibition selections, is actually more sensitive to social pressures than are choices of music to perform. Alternatively, it might because MoMA's exhibits are recent and contemporary while the NY Phil concerts include a much longer history of music and this long history somehoe dilutes the effects of social attitudes. For example, Americans did not hate German music from Beethoven's era. 
+
+### conclusion
+In this project, I studied the performance history of the NY Philharmonic and analyzed the trends of performance frequency by composer nationality and gender as a function of social attitudes derived from states of war, hostility and censorship. I also compared NY Phil performance data with MoMA exhibition data and found MoMA exhibition data to be even more sensitive to such social attitude pressures. This project tells the story of the NY Philharmonic's performance history and tries to explain how changes in its repertoire are related to changes in social attitudes in American history. This is my first attempt to bring quantitative analysis to bear on a field in the humanities. 
+
+### future work. 
+I would like to graph some individual NY Phil performer or composer's performance history to show how he or she rose to stardom over time. Is there a steady rise in the number of performances or are there any up and downs. In addition, I'd like to study the proportion of composers whose works are performed at NY Phil during their own lifetimes. Furthur, I'd like to see if any global art and culture trends like impressionism and popularity of Ballet Russe corresponds NY Phil performance history and MoMA exhibition history. In addition, I do want to point out that in this research I am relying on internet sources esepcially Wikipedia pages for composers' personal information. I believe that crowd intelligence can be reliable, but because these are not authorized sources, there must be some mistakes in the content. I caught some of them and corrected them by hand, but there might be some other faults in the sources which I did not catch. If I have more time and the resouces, I'd do the same study trying from authenticated sources for composers' nationalities and women gender and compare it with my study based on wikipeida pages, which can be a way to see how reliable crowd intelligence is. 
+
+### Achnolwegement
+I thank Yoav Bergner for introducing me to the wonderful world of data science. I thank Vincent Dorie for teaching me debugging techniques. And I thank George Robinson for moral support and critical review. 
